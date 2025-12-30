@@ -1,0 +1,4578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0a0f0d">
+  <title>Stillness v2 — Grow Through Boredom</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-deep: #0a0f0d;
+      --bg-surface: #121a16;
+      --bg-elevated: #1a241e;
+      --text-primary: #e8ede9;
+      --text-muted: #6b7c70;
+      --text-dim: #3d4a42;
+      --accent-growth: #7cb890;
+      --accent-bloom: #c4a7e7;
+      --accent-sun: #e6c875;
+      --accent-rain: #7ba3b8;
+      --accent-coral: #e87878;
+      --accent-rose: #d4a5a5;
+      --accent-ice: #a5c4d4;
+      --accent-moss: #5a8f6a;
+      --grain-opacity: 0.03;
+      --safe-top: env(safe-area-inset-top);
+      --safe-bottom: env(safe-area-inset-bottom);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html {
+      font-size: 16px;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      min-height: 100vh;
+      min-height: 100dvh;
+      overflow-x: hidden;
+      position: relative;
+      overscroll-behavior: none;
+    }
+
+    /* Film grain overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      opacity: var(--grain-opacity);
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    /* Subtle gradient orbs */
+    .ambient-orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.12;
+      pointer-events: none;
+      animation: float 20s ease-in-out infinite;
+      transition: opacity 1s ease, background 1s ease;
+    }
+
+    .orb-1 {
+      width: 400px;
+      height: 400px;
+      background: var(--accent-growth);
+      top: -100px;
+      right: -100px;
+    }
+
+    .orb-2 {
+      width: 300px;
+      height: 300px;
+      background: var(--accent-bloom);
+      bottom: -50px;
+      left: -50px;
+      animation-delay: -10s;
+    }
+
+    .orb-3 {
+      width: 200px;
+      height: 200px;
+      background: var(--accent-sun);
+      top: 40%;
+      left: -80px;
+      animation-delay: -5s;
+      opacity: 0.08;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(20px, -20px) scale(1.05); }
+      66% { transform: translate(-10px, 15px) scale(0.95); }
+    }
+
+    /* Navigation */
+    .nav {
+      position: fixed;
+      bottom: calc(1.5rem + var(--safe-bottom));
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 0.25rem;
+      padding: 0.4rem;
+      background: rgba(18, 26, 22, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 2rem;
+      border: 1px solid rgba(124, 184, 144, 0.1);
+      z-index: 100;
+    }
+
+    .nav-item {
+      padding: 0.7rem 1rem;
+      border-radius: 1.5rem;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    }
+
+    .nav-item:hover {
+      color: var(--text-primary);
+    }
+
+    .nav-item.active {
+      background: rgba(124, 184, 144, 0.15);
+      color: var(--accent-growth);
+    }
+
+    /* Screens */
+    .screen {
+      display: none;
+      padding: calc(0.5rem + var(--safe-top)) 1rem calc(5rem + var(--safe-bottom));
+      max-width: 600px;
+      margin: 0 auto;
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    .screen.active {
+      display: block;
+      animation: screenIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    /* Home: no scrolling, fit viewport */
+    #home.screen.active {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 2rem;
+      padding-top: calc(2.5rem + var(--safe-top));
+      padding-bottom: calc(4rem + var(--safe-bottom));
+      box-sizing: border-box;
+      opacity: 1;
+      transform: none;
+      max-width: none;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    #home.screen.active > * {
+      width: 100%;
+      max-width: 400px;
+    }
+
+    /* Garden: scrollable, content at top */
+    #garden.screen.active {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: block;
+      padding: 1rem;
+      padding-top: calc(0.5rem + var(--safe-top));
+      padding-bottom: calc(4rem + var(--safe-bottom));
+      box-sizing: border-box;
+      opacity: 1;
+      transform: none;
+      max-width: none;
+      margin: 0;
+      overflow-y: auto;
+    }
+
+    .screen.exiting {
+      animation: screenOut 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    @keyframes screenIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes screenOut {
+      from { opacity: 1; transform: translateY(0); }
+      to { opacity: 0; transform: translateY(-10px); }
+    }
+
+    /* Typography */
+    h1, h2, h3 {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      letter-spacing: -0.02em;
+    }
+
+    h1 {
+      font-size: 2.25rem;
+      line-height: 1.1;
+      margin-bottom: 0.5rem;
+    }
+
+    h2 {
+      font-size: 1.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      line-height: 1.6;
+      max-width: 280px;
+    }
+
+    /* ===== HOME SCREEN ===== */
+    .home-header {
+      margin-bottom: 0.75rem;
+      padding-top: 0.25rem;
+    }
+
+    .brand {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 0.75rem;
+      font-weight: 400;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .brand::before {
+      content: '';
+      width: 12px;
+      height: 12px;
+      background: var(--accent-growth);
+      border-radius: 50%;
+      opacity: 0.6;
+      animation: pulse 3s ease-in-out infinite;
+    }
+
+    .stats-row {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .stat-card {
+      flex: 1;
+      background: var(--bg-surface);
+      border: 1px solid rgba(124, 184, 144, 0.08);
+      border-radius: 1rem;
+      padding: 1.25rem;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.3s ease, border-color 0.3s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(124, 184, 144, 0.2);
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent-growth), transparent);
+      opacity: 0.5;
+    }
+
+    .stat-card.rain::before {
+      background: linear-gradient(90deg, transparent, var(--accent-rain), transparent);
+    }
+
+    .stat-icon {
+      width: 24px;
+      height: 24px;
+      margin-bottom: 0.75rem;
+      opacity: 0.6;
+    }
+
+    .stat-label {
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.25rem;
+    }
+
+    .stat-value {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.75rem;
+      font-weight: 300;
+      color: var(--text-primary);
+    }
+
+    .stat-unit {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-left: 0.15rem;
+    }
+
+    /* Current Plant Card */
+    .current-plant {
+      background: var(--bg-surface);
+      border-radius: 1.25rem;
+      padding: 0.75rem 1rem;
+      margin-bottom: 0.75rem;
+      border: 1px solid rgba(124, 184, 144, 0.08);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .current-plant-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1rem;
+    }
+
+    .current-plant-info h3 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.25rem;
+      font-style: italic;
+      margin-bottom: 0.25rem;
+    }
+
+    .current-plant-stage {
+      font-size: 0.65rem;
+      color: var(--accent-growth);
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+    }
+
+    .current-plant-needs {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .need-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.6rem;
+      background: rgba(124, 184, 144, 0.1);
+      border-radius: 1rem;
+      font-size: 0.65rem;
+      color: var(--text-muted);
+    }
+
+    .need-badge.rain {
+      background: rgba(123, 163, 184, 0.1);
+    }
+
+    .need-badge svg {
+      width: 12px;
+      height: 12px;
+      opacity: 0.7;
+    }
+
+    .plant-display {
+      height: 110px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      position: relative;
+    }
+
+    .plant-svg {
+      filter: drop-shadow(0 0 30px rgba(124, 184, 144, 0.25));
+      transition: filter 0.5s ease;
+    }
+
+    /* Plant Growth Transition System */
+    .plant-transition-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    .plant-transition-container .plant-svg {
+      position: absolute;
+      bottom: 0;
+      transition: opacity 2s cubic-bezier(0.4, 0, 0.2, 1),
+                  transform 2s cubic-bezier(0.4, 0, 0.2, 1),
+                  filter 1s ease-in-out;
+    }
+
+    .plant-svg.plant-current {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .plant-svg.plant-next {
+      opacity: 0;
+      transform: scale(0.9);
+      filter: drop-shadow(0 0 30px rgba(124, 184, 144, 0.25)) blur(2px);
+    }
+
+    .plant-svg.transitioning-out {
+      opacity: 0;
+      transform: scale(1.05);
+      filter: drop-shadow(0 0 20px rgba(124, 184, 144, 0.15)) blur(1px);
+    }
+
+    .plant-svg.transitioning-in {
+      opacity: 1;
+      transform: scale(1);
+      filter: drop-shadow(0 0 30px rgba(124, 184, 144, 0.25)) blur(0px);
+    }
+
+    @keyframes growthPulse {
+      0% { filter: drop-shadow(0 0 30px rgba(124, 184, 144, 0.25)); }
+      50% { filter: drop-shadow(0 0 50px rgba(124, 184, 144, 0.5)); }
+      100% { filter: drop-shadow(0 0 30px rgba(124, 184, 144, 0.25)); }
+    }
+
+    .plant-svg.growth-complete {
+      animation: growthPulse 2s ease-in-out;
+    }
+
+    .plant-progress {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: rgba(124, 184, 144, 0.1);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .plant-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent-growth), var(--accent-bloom));
+      border-radius: 2px;
+      transition: width 0.5s ease;
+    }
+
+    /* Action Buttons */
+    .action-buttons {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 1.1rem 1.25rem;
+      border-radius: 1rem;
+      border: none;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, transparent 50%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .btn:hover::after {
+      opacity: 1;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary {
+      background: var(--accent-growth);
+      color: var(--bg-deep);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 8px 30px rgba(124, 184, 144, 0.35);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-primary);
+      border: 1px solid rgba(124, 184, 144, 0.2);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(124, 184, 144, 0.08);
+      border-color: rgba(124, 184, 144, 0.35);
+    }
+
+    /* Quick Stats Row */
+    .quick-stats {
+      display: flex;
+      justify-content: space-around;
+      padding: 0.5rem 0;
+      margin-top: 0.5rem;
+      border-top: 1px solid rgba(124, 184, 144, 0.08);
+    }
+
+    .quick-stat {
+      text-align: center;
+    }
+
+    .quick-stat-value {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.5rem;
+      color: var(--text-primary);
+    }
+
+    .quick-stat-label {
+      font-size: 0.6rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    /* ===== FOCUS SCREEN ===== */
+    .focus-screen {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding-top: calc(1.5rem + var(--safe-top));
+    }
+
+    .focus-header {
+      text-align: center;
+    }
+
+    .focus-task {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg-surface);
+      border-radius: 2rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+      border: 1px solid rgba(124, 184, 144, 0.1);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .focus-task:hover {
+      background: var(--bg-elevated);
+      border-color: rgba(124, 184, 144, 0.2);
+    }
+
+    .focus-plant-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      min-height: 280px;
+    }
+
+    .focus-plant-glow {
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, rgba(230, 200, 117, 0.15) 0%, transparent 70%);
+      border-radius: 50%;
+      animation: glowPulse 4s ease-in-out infinite;
+    }
+
+    @keyframes glowPulse {
+      0%, 100% { transform: scale(1); opacity: 0.5; }
+      50% { transform: scale(1.2); opacity: 0.8; }
+    }
+
+    .sun-rays {
+      position: absolute;
+      top: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .timer-section {
+      text-align: center;
+      padding: 2rem 0;
+    }
+
+    .timer-ring {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      margin: 0 auto 1.5rem;
+    }
+
+    .timer-ring svg {
+      transform: rotate(-90deg);
+    }
+
+    .timer-ring-bg {
+      fill: none;
+      stroke: rgba(124, 184, 144, 0.1);
+      stroke-width: 3;
+    }
+
+    .timer-ring-progress {
+      fill: none;
+      stroke: var(--accent-growth);
+      stroke-width: 3;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 1s linear;
+    }
+
+    .timer-content {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .timer-time {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 3.5rem;
+      font-weight: 300;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      line-height: 1;
+    }
+
+    .timer-label {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      margin-top: 0.25rem;
+    }
+
+    .focus-status {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-sun);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.3); }
+    }
+
+    .status-text {
+      font-size: 0.8rem;
+      color: var(--accent-sun);
+    }
+
+    .focus-controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .btn-circle {
+      border-radius: 50%;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .btn-circle:active {
+      transform: scale(0.95);
+    }
+
+    .btn-stop {
+      width: 48px;
+      height: 48px;
+      background: rgba(232, 120, 120, 0.12);
+      color: var(--accent-coral);
+    }
+
+    .btn-stop:hover {
+      background: rgba(232, 120, 120, 0.2);
+    }
+
+    .btn-play-pause {
+      width: 72px;
+      height: 72px;
+      background: var(--accent-growth);
+      color: var(--bg-deep);
+    }
+
+    .btn-play-pause:hover {
+      box-shadow: 0 8px 40px rgba(124, 184, 144, 0.4);
+    }
+
+    .btn-skip {
+      width: 48px;
+      height: 48px;
+      background: rgba(124, 184, 144, 0.12);
+      color: var(--accent-growth);
+    }
+
+    .btn-skip:hover {
+      background: rgba(124, 184, 144, 0.2);
+    }
+
+    /* Duration Selector */
+    .duration-selector {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .duration-option {
+      padding: 0.6rem 1.2rem;
+      border-radius: 2rem;
+      border: 1px solid rgba(124, 184, 144, 0.15);
+      background: transparent;
+      color: var(--text-muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .duration-option:hover {
+      border-color: rgba(124, 184, 144, 0.3);
+      color: var(--text-primary);
+    }
+
+    .duration-option.active {
+      background: rgba(124, 184, 144, 0.15);
+      border-color: var(--accent-growth);
+      color: var(--accent-growth);
+    }
+
+    /* ===== VOID SCREEN ===== */
+    #void.screen.active {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 1rem;
+      padding-bottom: calc(4rem + var(--safe-bottom));
+      box-sizing: border-box;
+      opacity: 1;
+      transform: none;
+      max-width: none;
+      margin: 0;
+      height: auto;
+      overflow: hidden;
+    }
+
+    .void-screen.active .orb-1 {
+      background: var(--accent-rain);
+      opacity: 0.08;
+    }
+
+    .void-screen.active .orb-2 {
+      background: var(--accent-ice);
+      opacity: 0.06;
+    }
+
+    .void-rings {
+      position: relative;
+      width: 150px;
+      height: 150px;
+      margin-bottom: 1rem;
+    }
+
+    .void-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 1px solid rgba(123, 163, 184, 0.1);
+      animation: breathe 8s ease-in-out infinite;
+    }
+
+    .void-ring-1 {
+      inset: 0;
+    }
+
+    .void-ring-2 {
+      inset: -25px;
+      border-color: rgba(123, 163, 184, 0.05);
+      animation-delay: -2s;
+    }
+
+    .void-ring-3 {
+      inset: -50px;
+      border-color: rgba(123, 163, 184, 0.03);
+      animation-delay: -4s;
+    }
+
+    .void-ring-inner {
+      inset: 25px;
+      border-color: rgba(123, 163, 184, 0.15);
+      animation-direction: reverse;
+    }
+
+    @keyframes breathe {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.03); opacity: 0.7; }
+    }
+
+    .void-timer-display {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .void-timer {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2.25rem;
+      font-weight: 300;
+      color: var(--text-muted);
+      transition: color 0.5s ease;
+    }
+
+    .void-message {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.15rem;
+      font-style: italic;
+      color: var(--text-primary);
+      max-width: 200px;
+      line-height: 1.4;
+      margin-bottom: 0.5rem;
+      min-height: 3rem;
+    }
+
+    .void-instruction {
+      font-size: 0.6rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      margin-bottom: 1.25rem;
+      opacity: 0.7;
+    }
+
+    .void-goal {
+      width: 100%;
+      max-width: 220px;
+    }
+
+    .void-progress {
+      height: 3px;
+      background: rgba(123, 163, 184, 0.1);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 0.5rem;
+    }
+
+    .void-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent-rain), var(--accent-ice));
+      border-radius: 2px;
+      transition: width 1s ease;
+    }
+
+    .void-goal-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.6rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .void-controls {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .void-btn {
+      padding: 0.75rem 1.5rem;
+      border-radius: 2rem;
+      border: 1px solid rgba(123, 163, 184, 0.2);
+      background: rgba(123, 163, 184, 0.08);
+      color: var(--accent-rain);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .void-btn:hover {
+      background: rgba(123, 163, 184, 0.15);
+      border-color: rgba(123, 163, 184, 0.35);
+    }
+
+    /* Rain drops animation for void */
+    .rain-container {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      opacity: 0;
+      transition: opacity 1s ease;
+    }
+
+    .void-screen.active ~ .rain-container {
+      opacity: 1;
+    }
+
+    .raindrop {
+      position: absolute;
+      width: 1px;
+      height: 15px;
+      background: linear-gradient(to bottom, transparent, rgba(123, 163, 184, 0.3));
+      animation: rain 1.5s linear infinite;
+    }
+
+    @keyframes rain {
+      0% { transform: translateY(-100%); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { transform: translateY(100vh); opacity: 0; }
+    }
+
+    /* ===== GARDEN SCREEN ===== */
+    .garden-header {
+      margin-bottom: 0.75rem;
+      padding-top: 0.25rem;
+    }
+
+    .garden-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .garden-filter {
+      padding: 0.4rem 0.8rem;
+      border-radius: 1rem;
+      border: 1px solid rgba(124, 184, 144, 0.15);
+      background: transparent;
+      color: var(--text-muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.7rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .garden-filter:hover {
+      border-color: rgba(124, 184, 144, 0.3);
+    }
+
+    .garden-stats {
+      display: flex;
+      gap: 1.5rem;
+      margin-top: 0.75rem;
+    }
+
+    .garden-stat {
+      display: flex;
+      align-items: baseline;
+      gap: 0.35rem;
+    }
+
+    .garden-stat-value {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.35rem;
+      color: var(--text-primary);
+    }
+
+    .garden-stat-label {
+      font-size: 0.65rem;
+      color: var(--text-dim);
+    }
+
+    .garden-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .garden-cell {
+      aspect-ratio: 1;
+      background: var(--bg-surface);
+      border-radius: 1rem;
+      border: 1px solid rgba(124, 184, 144, 0.08);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 0.75rem;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow: hidden;
+    }
+
+    .garden-cell::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 100%, rgba(124, 184, 144, 0.05) 0%, transparent 70%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .garden-cell:hover {
+      border-color: rgba(124, 184, 144, 0.2);
+      transform: translateY(-3px);
+    }
+
+    .garden-cell:hover::before {
+      opacity: 1;
+    }
+
+    .garden-cell.empty {
+      border-style: dashed;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .garden-cell.empty::after {
+      content: '+';
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.75rem;
+      color: var(--text-dim);
+      transition: transform 0.3s ease;
+    }
+
+    .garden-cell.empty:hover::after {
+      transform: scale(1.2);
+    }
+
+    .garden-cell-stage {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      font-size: 0.45rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: var(--bg-deep);
+      padding: 0.2rem 0.4rem;
+      border-radius: 0.5rem;
+    }
+
+    .mini-plant {
+      transform: scale(0.45);
+      transform-origin: bottom center;
+    }
+
+    /* Collection Progress */
+    .collection-section {
+      background: var(--bg-surface);
+      border-radius: 1rem;
+      padding: 1.25rem;
+      border: 1px solid rgba(124, 184, 144, 0.08);
+      margin-bottom: 1.5rem;
+    }
+
+    .collection-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .collection-title {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .collection-count {
+      font-size: 0.7rem;
+      color: var(--accent-growth);
+    }
+
+    .collection-grid {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .collection-item {
+      width: 36px;
+      height: 36px;
+      border-radius: 0.5rem;
+      background: var(--bg-elevated);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      transition: all 0.3s ease;
+    }
+
+    .collection-item.unlocked {
+      background: rgba(124, 184, 144, 0.1);
+    }
+
+    .collection-item.locked {
+      opacity: 0.4;
+    }
+
+    .collection-item.locked::after {
+      content: '?';
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1rem;
+      color: var(--text-dim);
+    }
+
+    .collection-item svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    /* Weekly Summary */
+    .weekly-summary {
+      background: var(--bg-surface);
+      border-radius: 1rem;
+      padding: 1.25rem;
+      border: 1px solid rgba(124, 184, 144, 0.08);
+    }
+
+    .weekly-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .weekly-title {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .weekly-legend {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.6rem;
+      color: var(--text-dim);
+    }
+
+    .legend-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .legend-dot.focus {
+      background: var(--accent-growth);
+    }
+
+    .legend-dot.boredom {
+      background: var(--accent-rain);
+    }
+
+    .weekly-bars {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      height: 70px;
+      gap: 0.35rem;
+    }
+
+    .weekly-bar {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .bar-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      width: 100%;
+      max-width: 28px;
+    }
+
+    .bar-fill {
+      width: 100%;
+      border-radius: 3px;
+      transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .bar-focus {
+      background: var(--accent-growth);
+    }
+
+    .bar-boredom {
+      background: var(--accent-rain);
+      opacity: 0.7;
+    }
+
+    .bar-label {
+      font-size: 0.55rem;
+      color: var(--text-dim);
+    }
+
+    .bar-label.today {
+      color: var(--accent-growth);
+      font-weight: 500;
+    }
+
+    /* ===== FOCUS HISTORY CALENDAR ===== */
+    .history-section {
+      margin-top: 1.5rem;
+    }
+
+    .history-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .history-title {
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+    }
+
+    .history-legend {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.55rem;
+      color: var(--text-dim);
+    }
+
+    .legend-cell {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+    }
+
+    .focus-calendar {
+      background: var(--bg-surface);
+      border: 1px solid rgba(124, 184, 144, 0.08);
+      border-radius: 1rem;
+      padding: 1rem;
+      overflow-x: auto;
+    }
+
+    .calendar-wrapper {
+      display: flex;
+    }
+
+    .calendar-days {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      margin-right: 0.5rem;
+      padding-top: 1.5rem;
+    }
+
+    .day-label {
+      font-size: 0.5rem;
+      color: var(--text-dim);
+      height: 14px;
+      display: flex;
+      align-items: center;
+    }
+
+    .calendar-months {
+      display: flex;
+      gap: 2rem;
+      margin-bottom: 0.5rem;
+      padding-left: 1.5rem;
+      font-size: 0.5rem;
+      color: var(--text-dim);
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-rows: repeat(7, 1fr);
+      grid-auto-flow: column;
+      gap: 3px;
+    }
+
+    .calendar-cell {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      background: var(--bg-elevated);
+      transition: transform 0.2s ease, background 0.3s ease;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .calendar-cell:hover {
+      transform: scale(1.3);
+      z-index: 10;
+    }
+
+    /* Intensity levels */
+    .calendar-cell.level-0 { background: var(--bg-elevated); }
+    .calendar-cell.level-1 { background: rgba(124, 184, 144, 0.25); }
+    .calendar-cell.level-2 { background: rgba(124, 184, 144, 0.45); }
+    .calendar-cell.level-3 { background: rgba(124, 184, 144, 0.65); }
+    .calendar-cell.level-4 { background: rgba(124, 184, 144, 0.9); }
+
+    .legend-cell.level-0 { background: var(--bg-elevated); }
+    .legend-cell.level-1 { background: rgba(124, 184, 144, 0.25); }
+    .legend-cell.level-2 { background: rgba(124, 184, 144, 0.45); }
+    .legend-cell.level-3 { background: rgba(124, 184, 144, 0.65); }
+    .legend-cell.level-4 { background: rgba(124, 184, 144, 0.9); }
+
+    .calendar-cell.today {
+      box-shadow: inset 0 0 0 2px var(--accent-bloom);
+    }
+
+    .calendar-cell.future {
+      opacity: 0.3;
+    }
+
+    .calendar-summary {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(124, 184, 144, 0.08);
+    }
+
+    .summary-stat {
+      text-align: center;
+    }
+
+    .summary-value {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.25rem;
+      color: var(--text-primary);
+    }
+
+    .summary-label {
+      font-size: 0.55rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    /* ===== MODALS ===== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 15, 13, 0.9);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal {
+      background: var(--bg-surface);
+      border-radius: 1.5rem;
+      padding: 2rem;
+      max-width: 340px;
+      width: 100%;
+      border: 1px solid rgba(124, 184, 144, 0.1);
+      transform: scale(0.95) translateY(20px);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .modal-overlay.active .modal {
+      transform: scale(1) translateY(0);
+    }
+
+    .modal-header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .modal-icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 1rem;
+      background: rgba(124, 184, 144, 0.1);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-icon svg {
+      width: 32px;
+      height: 32px;
+      color: var(--accent-growth);
+    }
+
+    .modal h3 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .modal p {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+
+    .modal-stats {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      padding: 1rem 0;
+      margin-bottom: 1.5rem;
+      border-top: 1px solid rgba(124, 184, 144, 0.08);
+      border-bottom: 1px solid rgba(124, 184, 144, 0.08);
+    }
+
+    .modal-stat {
+      text-align: center;
+    }
+
+    .modal-stat-value {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.75rem;
+      color: var(--text-primary);
+    }
+
+    .modal-stat-label {
+      font-size: 0.6rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    /* Plant Detail Modal */
+    .plant-modal-display {
+      height: 150px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      margin-bottom: 1rem;
+    }
+
+    .plant-modal-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.5rem;
+      font-style: italic;
+      text-align: center;
+      margin-bottom: 0.25rem;
+    }
+
+    .plant-modal-stage {
+      text-align: center;
+      font-size: 0.65rem;
+      color: var(--accent-growth);
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      margin-bottom: 1rem;
+    }
+
+    .plant-modal-lore {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      color: var(--text-muted);
+      text-align: center;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
+    }
+
+    .plant-modal-requirements {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      padding: 1rem;
+      background: var(--bg-deep);
+      border-radius: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .requirement {
+      text-align: center;
+    }
+
+    .requirement-icon {
+      width: 32px;
+      height: 32px;
+      margin: 0 auto 0.5rem;
+      opacity: 0.7;
+    }
+
+    .requirement-label {
+      font-size: 0.6rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .requirement-value {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.1rem;
+      color: var(--text-primary);
+    }
+
+    /* Onboarding */
+    .onboarding {
+      position: fixed;
+      inset: 0;
+      background: var(--bg-deep);
+      z-index: 300;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    .onboarding.hidden {
+      display: none;
+    }
+
+    .onboarding-step {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      max-width: 320px;
+      animation: fadeUp 0.6s ease forwards;
+    }
+
+    .onboarding-step.active {
+      display: flex;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .onboarding-visual {
+      height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 2rem;
+    }
+
+    .onboarding h2 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    .onboarding p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin-bottom: 2rem;
+    }
+
+    .onboarding-dots {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .onboarding-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-dim);
+      transition: all 0.3s ease;
+    }
+
+    .onboarding-dot.active {
+      background: var(--accent-growth);
+      width: 24px;
+      border-radius: 4px;
+    }
+
+    .onboarding-btn {
+      padding: 1rem 3rem;
+      border-radius: 2rem;
+      border: none;
+      background: var(--accent-growth);
+      color: var(--bg-deep);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .onboarding-btn:hover {
+      box-shadow: 0 10px 40px rgba(124, 184, 144, 0.4);
+    }
+
+    .onboarding-skip {
+      position: absolute;
+      top: calc(1.5rem + var(--safe-top));
+      right: 1.5rem;
+      padding: 0.5rem 1rem;
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: color 0.3s ease;
+    }
+
+    .onboarding-skip:hover {
+      color: var(--text-muted);
+    }
+
+    /* Toast notifications */
+    .toast {
+      position: fixed;
+      bottom: calc(6rem + var(--safe-bottom));
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--bg-elevated);
+      border: 1px solid rgba(124, 184, 144, 0.15);
+      border-radius: 1rem;
+      padding: 0.75rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      z-index: 150;
+      opacity: 0;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    .toast-icon {
+      width: 20px;
+      height: 20px;
+      color: var(--accent-growth);
+    }
+
+    .toast-text {
+      font-size: 0.8rem;
+      color: var(--text-primary);
+    }
+
+    /* Utility */
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border-width: 0;
+    }
+
+    /* Install prompt */
+    .install-prompt {
+      position: fixed;
+      bottom: calc(6rem + var(--safe-bottom));
+      left: 1rem;
+      right: 1rem;
+      background: var(--bg-surface);
+      border: 1px solid rgba(124, 184, 144, 0.15);
+      border-radius: 1rem;
+      padding: 1rem;
+      display: none;
+      align-items: center;
+      gap: 1rem;
+      z-index: 150;
+      animation: slideUp 0.4s ease forwards;
+    }
+
+    .install-prompt.show {
+      display: flex;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .install-prompt-icon {
+      width: 40px;
+      height: 40px;
+      background: rgba(124, 184, 144, 0.15);
+      border-radius: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .install-prompt-text {
+      flex: 1;
+    }
+
+    .install-prompt-text strong {
+      display: block;
+      font-size: 0.85rem;
+      margin-bottom: 0.15rem;
+    }
+
+    .install-prompt-text span {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    .install-prompt-btn {
+      padding: 0.5rem 1rem;
+      border-radius: 0.75rem;
+      border: none;
+      background: var(--accent-growth);
+      color: var(--bg-deep);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .install-prompt-close {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      padding: 0.25rem;
+    }
+
+    /* ===== SETTINGS SCREEN ===== */
+    .settings-header {
+      margin-bottom: 2rem;
+      padding-top: 1rem;
+    }
+
+    .settings-section {
+      margin-bottom: 1.5rem;
+    }
+
+    .settings-section-title {
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      margin-bottom: 0.75rem;
+    }
+
+    .settings-card {
+      background: var(--bg-surface);
+      border: 1px solid rgba(124, 184, 144, 0.08);
+      border-radius: 1rem;
+      overflow: hidden;
+    }
+
+    .settings-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid rgba(124, 184, 144, 0.05);
+    }
+
+    .settings-item:last-child {
+      border-bottom: none;
+    }
+
+    .settings-item-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .settings-item-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 0.75rem;
+      background: rgba(124, 184, 144, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .settings-item-icon svg {
+      width: 18px;
+      height: 18px;
+      color: var(--accent-growth);
+    }
+
+    .settings-item-text h4 {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 500;
+      margin-bottom: 0.15rem;
+    }
+
+    .settings-item-text span {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    /* Toggle Switch */
+    .toggle-switch {
+      position: relative;
+      width: 48px;
+      height: 28px;
+      background: var(--bg-elevated);
+      border-radius: 14px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    .toggle-switch.active {
+      background: var(--accent-growth);
+    }
+
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      background: var(--text-primary);
+      border-radius: 50%;
+      top: 3px;
+      left: 3px;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .toggle-switch.active::after {
+      transform: translateX(20px);
+    }
+
+    /* Sound Controls */
+    .sound-controls {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      padding: 0 1.25rem 1rem;
+    }
+
+    .sound-btn {
+      flex: 1;
+      padding: 0.6rem 0.5rem;
+      border-radius: 0.75rem;
+      border: 1px solid rgba(124, 184, 144, 0.15);
+      background: transparent;
+      color: var(--text-muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.7rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .sound-btn:hover {
+      border-color: rgba(124, 184, 144, 0.3);
+      color: var(--text-primary);
+    }
+
+    .sound-btn.active {
+      background: rgba(124, 184, 144, 0.15);
+      border-color: var(--accent-growth);
+      color: var(--accent-growth);
+    }
+
+    .sound-btn svg {
+      width: 16px;
+      height: 16px;
+      opacity: 0.7;
+    }
+
+    .volume-slider {
+      padding: 0 1.25rem 1rem;
+    }
+
+    .volume-slider input {
+      width: 100%;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 4px;
+      background: var(--bg-elevated);
+      border-radius: 2px;
+      outline: none;
+    }
+
+    .volume-slider input::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      background: var(--accent-growth);
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    /* Boredom Prompt Modal */
+    .boredom-prompt-modal .modal {
+      text-align: center;
+    }
+
+    .boredom-prompt-icon {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 1.5rem;
+      background: rgba(123, 163, 184, 0.15);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .boredom-prompt-icon svg {
+      width: 40px;
+      height: 40px;
+      color: var(--accent-rain);
+    }
+
+    .boredom-prompt-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.25rem;
+      font-style: italic;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .boredom-prompt-text {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.75rem;
+      line-height: 1.3;
+      margin-bottom: 1.5rem;
+    }
+
+    .boredom-prompt-skip {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      margin-top: 1rem;
+    }
+
+    /* Light Theme */
+    body.light-theme {
+      --bg-deep: #f5f7f6;
+      --bg-surface: #ffffff;
+      --bg-elevated: #e8ede9;
+      --text-primary: #1a241e;
+      --text-muted: #5a6a60;
+      --text-dim: #8a9a90;
+      --grain-opacity: 0.02;
+    }
+
+    body.light-theme .nav {
+      background: rgba(255, 255, 255, 0.9);
+      border-color: rgba(124, 184, 144, 0.15);
+    }
+
+    body.light-theme .stat-card,
+    body.light-theme .current-plant,
+    body.light-theme .settings-card,
+    body.light-theme .collection-section,
+    body.light-theme .weekly-summary {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    /* Void screen enhancements */
+    .void-intro {
+      text-align: center;
+      margin-bottom: 0.5rem;
+      opacity: 0;
+      animation: fadeIn 1s ease 0.3s forwards;
+    }
+
+    @keyframes fadeIn {
+      to { opacity: 1; }
+    }
+
+    .void-quote {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 0.9rem;
+      font-style: italic;
+      color: var(--text-primary);
+      max-width: 240px;
+      margin: 0 auto 0.25rem;
+      line-height: 1.4;
+    }
+
+    .void-author {
+      font-size: 0.55rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+    }
+
+    .void-benefits {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+      justify-content: center;
+    }
+
+    .void-benefit {
+      text-align: center;
+      padding: 0.5rem 0.6rem;
+      background: rgba(123, 163, 184, 0.05);
+      border-radius: 0.5rem;
+      border: 1px solid rgba(123, 163, 184, 0.1);
+      min-width: 60px;
+    }
+
+    .void-benefit-icon {
+      font-size: 1rem;
+      margin-bottom: 0.15rem;
+    }
+
+    .void-benefit-text {
+      font-size: 0.5rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Garden intro section */
+    .garden-intro {
+      background: linear-gradient(135deg, rgba(124, 184, 144, 0.08) 0%, rgba(196, 167, 231, 0.08) 100%);
+      border-radius: 0.75rem;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1rem;
+      border: 1px solid rgba(124, 184, 144, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .garden-intro-quote {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 0.85rem;
+      font-style: italic;
+      color: var(--text-muted);
+      flex: 1;
+      line-height: 1.3;
+    }
+
+    .garden-intro-stats {
+      display: flex;
+      gap: 1rem;
+      flex-shrink: 0;
+    }
+
+    .garden-intro-stat {
+      text-align: center;
+    }
+
+    .garden-intro-stat-value {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.25rem;
+      color: var(--text-primary);
+      line-height: 1;
+    }
+
+    .garden-intro-stat-label {
+      font-size: 0.5rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Sound indicator */
+    .sound-indicator {
+      position: fixed;
+      top: calc(1rem + var(--safe-top));
+      right: 1rem;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--bg-surface);
+      border: 1px solid rgba(124, 184, 144, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 90;
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+
+    .sound-indicator.visible {
+      opacity: 1;
+    }
+
+    .sound-indicator svg {
+      width: 18px;
+      height: 18px;
+      color: var(--text-muted);
+    }
+
+    .sound-indicator.playing svg {
+      color: var(--accent-growth);
+    }
+
+    /* Audio visualizer waves */
+    .sound-waves {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      height: 18px;
+    }
+
+    .sound-wave {
+      width: 3px;
+      background: var(--accent-growth);
+      border-radius: 2px;
+      animation: soundWave 1s ease-in-out infinite;
+    }
+
+    .sound-wave:nth-child(1) { height: 8px; animation-delay: 0s; }
+    .sound-wave:nth-child(2) { height: 14px; animation-delay: 0.1s; }
+    .sound-wave:nth-child(3) { height: 10px; animation-delay: 0.2s; }
+    .sound-wave:nth-child(4) { height: 16px; animation-delay: 0.3s; }
+    .sound-wave:nth-child(5) { height: 6px; animation-delay: 0.4s; }
+
+    @keyframes soundWave {
+      0%, 100% { transform: scaleY(0.5); }
+      50% { transform: scaleY(1); }
+    }
+  </style>
+</head>
+<body>
+  <!-- Ambient background -->
+  <div class="ambient-orb orb-1"></div>
+  <div class="ambient-orb orb-2"></div>
+  <div class="ambient-orb orb-3"></div>
+
+  <!-- Rain container for void mode -->
+  <div class="rain-container" id="rainContainer"></div>
+
+  <!-- Onboarding -->
+  <div class="onboarding" id="onboarding">
+    <button class="onboarding-skip" onclick="skipOnboarding()">Skip</button>
+
+    <div class="onboarding-step active" data-step="1">
+      <div class="onboarding-visual">
+        <svg width="120" height="160" viewBox="0 0 120 160">
+          <path d="M60 160 Q60 100 55 60 Q50 30 60 10" stroke="#7cb890" stroke-width="4" fill="none" stroke-linecap="round">
+            <animate attributeName="d" dur="4s" repeatCount="indefinite" values="M60 160 Q60 100 55 60 Q50 30 60 10;M60 160 Q60 100 65 60 Q70 30 60 10;M60 160 Q60 100 55 60 Q50 30 60 10"/>
+          </path>
+          <ellipse cx="42" cy="55" rx="22" ry="9" fill="#7cb890" transform="rotate(-35 42 55)" opacity="0.8"/>
+          <ellipse cx="78" cy="40" rx="20" ry="8" fill="#7cb890" transform="rotate(30 78 40)" opacity="0.7"/>
+          <circle cx="60" cy="8" r="14" fill="#c4a7e7" opacity="0.9">
+            <animate attributeName="r" dur="3s" repeatCount="indefinite" values="14;16;14"/>
+          </circle>
+        </svg>
+      </div>
+      <h2>Welcome to Stillness</h2>
+      <p>Grow a garden through focus and boredom. In a world of endless distraction, rediscover the power of doing nothing.</p>
+      <div class="onboarding-dots">
+        <div class="onboarding-dot active"></div>
+        <div class="onboarding-dot"></div>
+        <div class="onboarding-dot"></div>
+      </div>
+      <button class="onboarding-btn" onclick="nextOnboardingStep()">Continue</button>
+    </div>
+
+    <div class="onboarding-step" data-step="2">
+      <div class="onboarding-visual">
+        <svg width="100" height="100" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(230, 200, 117, 0.2)" stroke-width="2"/>
+          <circle cx="50" cy="50" r="45" fill="none" stroke="#e6c875" stroke-width="2" stroke-dasharray="283" stroke-dashoffset="70" stroke-linecap="round">
+            <animate attributeName="stroke-dashoffset" dur="3s" repeatCount="indefinite" values="283;0;283"/>
+          </circle>
+          <g opacity="0.5">
+            <line x1="50" y1="5" x2="50" y2="20" stroke="#e6c875" stroke-width="2">
+              <animate attributeName="opacity" dur="2s" repeatCount="indefinite" values="0.3;0.8;0.3"/>
+            </line>
+            <line x1="85" y1="20" x2="75" y2="30" stroke="#e6c875" stroke-width="2">
+              <animate attributeName="opacity" dur="2s" repeatCount="indefinite" values="0.3;0.8;0.3" begin="0.3s"/>
+            </line>
+            <line x1="15" y1="20" x2="25" y2="30" stroke="#e6c875" stroke-width="2">
+              <animate attributeName="opacity" dur="2s" repeatCount="indefinite" values="0.3;0.8;0.3" begin="0.6s"/>
+            </line>
+          </g>
+        </svg>
+      </div>
+      <h2>Focus Mode</h2>
+      <p>Set a timer and focus. Your plants absorb sunlight during deep work sessions. The longer you focus, the stronger they grow.</p>
+      <div class="onboarding-dots">
+        <div class="onboarding-dot"></div>
+        <div class="onboarding-dot active"></div>
+        <div class="onboarding-dot"></div>
+      </div>
+      <button class="onboarding-btn" onclick="nextOnboardingStep()">Continue</button>
+    </div>
+
+    <div class="onboarding-step" data-step="3">
+      <div class="onboarding-visual">
+        <div style="position: relative; width: 120px; height: 120px;">
+          <div style="position: absolute; inset: 0; border-radius: 50%; border: 1px solid rgba(123, 163, 184, 0.2); animation: breathe 4s ease-in-out infinite;"></div>
+          <div style="position: absolute; inset: -15px; border-radius: 50%; border: 1px solid rgba(123, 163, 184, 0.1); animation: breathe 4s ease-in-out infinite reverse;"></div>
+          <div style="position: absolute; inset: 15px; border-radius: 50%; border: 1px solid rgba(123, 163, 184, 0.3);"></div>
+        </div>
+      </div>
+      <h2>The Void</h2>
+      <p>Put your phone down. Enter the void. Rain falls on your garden when you embrace boredom. Some rare plants only bloom in stillness.</p>
+      <div class="onboarding-dots">
+        <div class="onboarding-dot"></div>
+        <div class="onboarding-dot"></div>
+        <div class="onboarding-dot active"></div>
+      </div>
+      <button class="onboarding-btn" onclick="completeOnboarding()">Begin Growing</button>
+    </div>
+  </div>
+
+  <!-- Home Screen -->
+  <section id="home" class="screen active">
+    <header class="home-header">
+      <div class="brand">
+        <span>Stillness</span>
+      </div>
+      <h1>Grow through<br>nothing</h1>
+      <p class="subtitle">Your garden thrives on focus and blooms in boredom.</p>
+    </header>
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="#e6c875" stroke-width="1.5">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+        </svg>
+        <div class="stat-label">Today's Focus</div>
+        <div class="stat-value" id="todayFocus">0<span class="stat-unit">m</span></div>
+      </div>
+      <div class="stat-card rain">
+        <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="#7ba3b8" stroke-width="1.5">
+          <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+        </svg>
+        <div class="stat-label">Boredom Time</div>
+        <div class="stat-value" id="todayBoredom">0<span class="stat-unit">m</span></div>
+      </div>
+    </div>
+
+    <div class="current-plant" id="currentPlantCard">
+      <div class="current-plant-header">
+        <div class="current-plant-info">
+          <h3 id="currentPlantName">Select a seed</h3>
+          <div class="current-plant-stage" id="currentPlantStage">No plant growing</div>
+        </div>
+        <div class="current-plant-needs">
+          <div class="need-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="4"/>
+              <path d="M12 2v2M12 20v2"/>
+            </svg>
+            <span id="needSun">0m</span>
+          </div>
+          <div class="need-badge rain">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+            </svg>
+            <span id="needRain">0m</span>
+          </div>
+        </div>
+      </div>
+      <div class="plant-display" id="currentPlantDisplay">
+        <div class="plant-transition-container">
+          <svg class="plant-svg plant-current" width="100" height="140" viewBox="0 0 100 140" id="homePlantSvg">
+            <text x="50" y="100" text-anchor="middle" fill="#3d4a42" font-family="Cormorant Garamond" font-size="14" font-style="italic">No plant yet</text>
+          </svg>
+          <svg class="plant-svg plant-next" width="100" height="140" viewBox="0 0 100 140" id="homePlantSvgNext"></svg>
+        </div>
+      </div>
+      <div class="plant-progress">
+        <div class="plant-progress-fill" id="plantProgressFill" style="width: 0%"></div>
+      </div>
+    </div>
+
+    <div class="action-buttons">
+      <button class="btn btn-primary" onclick="showScreen('focus')">Begin Focus</button>
+      <button class="btn btn-secondary" onclick="showScreen('void')">Enter Void</button>
+    </div>
+
+    <div class="quick-stats">
+      <div class="quick-stat">
+        <div class="quick-stat-value" id="totalPlants">0</div>
+        <div class="quick-stat-label">Plants Grown</div>
+      </div>
+      <div class="quick-stat">
+        <div class="quick-stat-value" id="currentStreak">0</div>
+        <div class="quick-stat-label">Day Streak</div>
+      </div>
+      <div class="quick-stat">
+        <div class="quick-stat-value" id="rareCount">0</div>
+        <div class="quick-stat-label">Rare Found</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Focus Screen -->
+  <section id="focus" class="screen focus-screen">
+    <div class="focus-header">
+      <button class="focus-task" onclick="showTaskModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+        <span id="focusTaskText">What are you focusing on?</span>
+      </button>
+      <h2>Focus Session</h2>
+    </div>
+
+    <div class="duration-selector" id="durationSelector">
+      <button class="duration-option" data-minutes="15">15m</button>
+      <button class="duration-option active" data-minutes="25">25m</button>
+      <button class="duration-option" data-minutes="45">45m</button>
+      <button class="duration-option" data-minutes="60">60m</button>
+    </div>
+
+    <div class="focus-plant-container">
+      <div class="focus-plant-glow" id="focusGlow"></div>
+      <svg class="sun-rays" id="sunRays" width="140" height="60" viewBox="0 0 140 60" opacity="0">
+        <line x1="70" y1="0" x2="70" y2="40" stroke="#e6c875" stroke-width="1.5">
+          <animate attributeName="opacity" dur="2s" repeatCount="indefinite" values="0.2;0.6;0.2"/>
+        </line>
+        <line x1="30" y1="10" x2="50" y2="45" stroke="#e6c875" stroke-width="1.5">
+          <animate attributeName="opacity" dur="2s" repeatCount="indefinite" values="0.2;0.6;0.2" begin="0.3s"/>
+        </line>
+        <line x1="110" y1="10" x2="90" y2="45" stroke="#e6c875" stroke-width="1.5">
+          <animate attributeName="opacity" dur="2s" repeatCount="indefinite" values="0.2;0.6;0.2" begin="0.6s"/>
+        </line>
+        <line x1="10" y1="30" x2="40" y2="50" stroke="#e6c875" stroke-width="1">
+          <animate attributeName="opacity" dur="2s" repeatCount="indefinite" values="0.1;0.4;0.1" begin="0.9s"/>
+        </line>
+        <line x1="130" y1="30" x2="100" y2="50" stroke="#e6c875" stroke-width="1">
+          <animate attributeName="opacity" dur="2s" repeatCount="indefinite" values="0.1;0.4;0.1" begin="1.2s"/>
+        </line>
+      </svg>
+      <div class="plant-transition-container" style="width: 120px; height: 180px;">
+        <svg class="plant-svg plant-current" width="120" height="180" viewBox="0 0 120 180" id="focusPlantSvg">
+          <text x="60" y="120" text-anchor="middle" fill="#3d4a42" font-family="Cormorant Garamond" font-size="12" font-style="italic">Select a plant first</text>
+        </svg>
+        <svg class="plant-svg plant-next" width="120" height="180" viewBox="0 0 120 180" id="focusPlantSvgNext"></svg>
+      </div>
+    </div>
+
+    <div class="timer-section">
+      <div class="timer-ring">
+        <svg width="200" height="200" viewBox="0 0 200 200">
+          <circle class="timer-ring-bg" cx="100" cy="100" r="90"/>
+          <circle class="timer-ring-progress" id="timerProgress" cx="100" cy="100" r="90"
+                  stroke-dasharray="565.48" stroke-dashoffset="0"/>
+        </svg>
+        <div class="timer-content">
+          <div class="timer-time" id="timerDisplay">25:00</div>
+          <div class="timer-label" id="timerLabel">Ready</div>
+        </div>
+      </div>
+
+      <div class="focus-status" id="focusStatus" style="opacity: 0;">
+        <div class="status-dot"></div>
+        <span class="status-text">Absorbing sunlight</span>
+      </div>
+
+      <div class="focus-controls">
+        <button class="btn-circle btn-stop" onclick="stopFocus()" id="btnStop" style="opacity: 0.3; pointer-events: none;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <rect x="6" y="6" width="12" height="12" rx="2"/>
+          </svg>
+        </button>
+        <button class="btn-circle btn-play-pause" onclick="toggleFocus()" id="btnPlayPause">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" id="playPauseIcon">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+        </button>
+        <button class="btn-circle btn-skip" onclick="skipToEnd()" id="btnSkip" style="opacity: 0.3; pointer-events: none;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="5 4 15 12 5 20 5 4"/>
+            <line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Void/Boredom Screen -->
+  <section id="void" class="screen void-screen">
+    <div class="void-intro" id="voidIntro">
+      <p class="void-quote">"Almost everything will work again if you unplug it for a few minutes, including you."</p>
+      <span class="void-author">Anne Lamott</span>
+    </div>
+
+    <div class="void-benefits" id="voidBenefits">
+      <div class="void-benefit">
+        <div class="void-benefit-icon">🧠</div>
+        <div class="void-benefit-text">Reset</div>
+      </div>
+      <div class="void-benefit">
+        <div class="void-benefit-icon">💡</div>
+        <div class="void-benefit-text">Ideas</div>
+      </div>
+      <div class="void-benefit">
+        <div class="void-benefit-icon">🌱</div>
+        <div class="void-benefit-text">Growth</div>
+      </div>
+    </div>
+
+    <div class="void-rings">
+      <div class="void-ring void-ring-1"></div>
+      <div class="void-ring void-ring-2"></div>
+      <div class="void-ring void-ring-3"></div>
+      <div class="void-ring void-ring-inner"></div>
+      <div class="void-timer-display">
+        <div class="void-timer" id="voidTimer">0:00</div>
+      </div>
+    </div>
+
+    <p class="void-message" id="voidMessage">Let the rain fall on your garden</p>
+    <p class="void-instruction">Put your phone down</p>
+
+    <div class="void-goal">
+      <div class="void-progress">
+        <div class="void-progress-fill" id="voidProgressFill" style="width: 0%"></div>
+      </div>
+      <div class="void-goal-label">
+        <span>Goal</span>
+        <span id="voidGoalText">5 min</span>
+      </div>
+    </div>
+
+    <div class="void-controls">
+      <button class="void-btn" onclick="toggleVoid()" id="voidToggleBtn">Begin</button>
+      <button class="void-btn" onclick="showScreen('home')" id="voidExitBtn">Exit</button>
+    </div>
+  </section>
+
+  <!-- Garden Screen -->
+  <section id="garden" class="screen">
+    <header class="garden-header">
+      <div class="garden-title-row">
+        <h2>Your Garden</h2>
+        <button class="garden-filter" onclick="showScreen('settings')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </button>
+      </div>
+      <div class="garden-stats">
+        <div class="garden-stat">
+          <span class="garden-stat-value" id="gardenPlantCount">0</span>
+          <span class="garden-stat-label">plants grown</span>
+        </div>
+        <div class="garden-stat">
+          <span class="garden-stat-value" id="gardenStreak">0</span>
+          <span class="garden-stat-label">day streak</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="garden-intro">
+      <p class="garden-intro-quote">"The garden is a love song, a duet between a human being and Mother Nature."</p>
+      <div class="garden-intro-stats">
+        <div class="garden-intro-stat">
+          <div class="garden-intro-stat-value" id="totalFocusHours">0</div>
+          <div class="garden-intro-stat-label">Focus Hours</div>
+        </div>
+        <div class="garden-intro-stat">
+          <div class="garden-intro-stat-value" id="totalBoredomHours">0</div>
+          <div class="garden-intro-stat-label">Still Hours</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="garden-grid" id="gardenGrid">
+      <!-- Plants will be rendered here -->
+    </div>
+
+    <div class="collection-section">
+      <div class="collection-header">
+        <span class="collection-title">Collection</span>
+        <span class="collection-count" id="collectionCount">0 / 20</span>
+      </div>
+      <div class="collection-grid" id="collectionGrid">
+        <!-- Collection items will be rendered here -->
+      </div>
+    </div>
+
+    <div class="weekly-summary">
+      <div class="weekly-header">
+        <span class="weekly-title">This Week</span>
+        <div class="weekly-legend">
+          <div class="legend-item">
+            <div class="legend-dot focus"></div>
+            <span>Focus</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot boredom"></div>
+            <span>Boredom</span>
+          </div>
+        </div>
+      </div>
+      <div class="weekly-bars" id="weeklyBars">
+        <!-- Bars will be rendered here -->
+      </div>
+    </div>
+  </section>
+
+  <!-- Settings Screen -->
+  <section id="settings" class="screen">
+    <header class="settings-header">
+      <h2>Settings</h2>
+      <p class="subtitle">Customize your experience</p>
+    </header>
+
+    <div class="settings-section">
+      <div class="settings-section-title">Appearance</div>
+      <div class="settings-card">
+        <div class="settings-item">
+          <div class="settings-item-info">
+            <div class="settings-item-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="5"/>
+                <line x1="12" y1="1" x2="12" y2="3"/>
+                <line x1="12" y1="21" x2="12" y2="23"/>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                <line x1="1" y1="12" x2="3" y2="12"/>
+                <line x1="21" y1="12" x2="23" y2="12"/>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+              </svg>
+            </div>
+            <div class="settings-item-text">
+              <h4>Light Mode</h4>
+              <span>Brighter theme for daytime</span>
+            </div>
+          </div>
+          <div class="toggle-switch" id="themeToggle" onclick="toggleTheme()"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">Ambient Sounds</div>
+      <div class="settings-card">
+        <div class="settings-item">
+          <div class="settings-item-info">
+            <div class="settings-item-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+              </svg>
+            </div>
+            <div class="settings-item-text">
+              <h4>Ambient Sounds</h4>
+              <span>Relaxing background audio</span>
+            </div>
+          </div>
+          <div class="toggle-switch" id="soundToggle" onclick="toggleSound()"></div>
+        </div>
+        <div class="sound-controls" id="soundControls" style="display: none;">
+          <button class="sound-btn" data-sound="rain" onclick="selectSound('rain')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+            </svg>
+            Rain
+          </button>
+          <button class="sound-btn" data-sound="forest" onclick="selectSound('forest')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2L2 22h20L12 2z"/>
+            </svg>
+            Forest
+          </button>
+          <button class="sound-btn" data-sound="waves" onclick="selectSound('waves')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M2 12c2-2 4-3 6-3s4 1 6 3 4 3 6 3"/>
+              <path d="M2 17c2-2 4-3 6-3s4 1 6 3 4 3 6 3"/>
+            </svg>
+            Waves
+          </button>
+          <button class="sound-btn" data-sound="wind" onclick="selectSound('wind')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"/>
+            </svg>
+            Wind
+          </button>
+        </div>
+        <div class="volume-slider" id="volumeSlider" style="display: none;">
+          <input type="range" min="0" max="100" value="50" id="volumeRange" oninput="setVolume(this.value)">
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">Boredom Prompts</div>
+      <div class="settings-card">
+        <div class="settings-item">
+          <div class="settings-item-info">
+            <div class="settings-item-icon" style="background: rgba(123, 163, 184, 0.1);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#7ba3b8" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            </div>
+            <div class="settings-item-text">
+              <h4>Mindful Prompts</h4>
+              <span>Suggestions after void goals</span>
+            </div>
+          </div>
+          <div class="toggle-switch active" id="promptsToggle" onclick="togglePrompts()"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section history-section">
+      <div class="history-header">
+        <div class="history-title">Focus History</div>
+        <div class="history-legend">
+          <span>Less</span>
+          <div class="legend-cell level-0"></div>
+          <div class="legend-cell level-1"></div>
+          <div class="legend-cell level-2"></div>
+          <div class="legend-cell level-3"></div>
+          <div class="legend-cell level-4"></div>
+          <span>More</span>
+        </div>
+      </div>
+      <div class="focus-calendar">
+        <div class="calendar-months" id="calendarMonths"></div>
+        <div class="calendar-wrapper">
+          <div class="calendar-days">
+            <div class="day-label">M</div>
+            <div class="day-label">T</div>
+            <div class="day-label">W</div>
+            <div class="day-label">T</div>
+            <div class="day-label">F</div>
+            <div class="day-label">S</div>
+            <div class="day-label">S</div>
+          </div>
+          <div class="calendar-grid" id="focusCalendar"></div>
+        </div>
+        <div class="calendar-summary">
+          <div class="summary-stat">
+            <div class="summary-value" id="calendarTotalDays">0</div>
+            <div class="summary-label">Active Days</div>
+          </div>
+          <div class="summary-stat">
+            <div class="summary-value" id="calendarTotalFocus">0h</div>
+            <div class="summary-label">Total Focus</div>
+          </div>
+          <div class="summary-stat">
+            <div class="summary-value" id="calendarLongestStreak">0</div>
+            <div class="summary-label">Best Streak</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">Data</div>
+      <div class="settings-card">
+        <div class="settings-item" onclick="resetData()" style="cursor: pointer;">
+          <div class="settings-item-info">
+            <div class="settings-item-icon" style="background: rgba(232, 120, 120, 0.1);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#e87878" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              </svg>
+            </div>
+            <div class="settings-item-text">
+              <h4>Reset All Data</h4>
+              <span>Clear your garden and progress</span>
+            </div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 2rem;">
+      <button class="btn btn-secondary" onclick="showScreen('garden')" style="min-width: 120px;">
+        Back to Garden
+      </button>
+    </div>
+  </section>
+
+  <!-- Navigation -->
+  <nav class="nav">
+    <button class="nav-item active" data-screen="home">Home</button>
+    <button class="nav-item" data-screen="focus">Focus</button>
+    <button class="nav-item" data-screen="void">Void</button>
+    <button class="nav-item" data-screen="garden">Garden</button>
+  </nav>
+
+  <!-- Sound Indicator -->
+  <div class="sound-indicator" id="soundIndicator" onclick="toggleSoundFromIndicator()">
+    <svg id="soundIndicatorIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+      <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+    </svg>
+  </div>
+
+  <!-- Session Complete Modal -->
+  <div class="modal-overlay" id="sessionCompleteModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+        </div>
+        <h3>Session Complete!</h3>
+        <p id="sessionCompleteMessage">Your plant absorbed precious sunlight.</p>
+      </div>
+      <div class="modal-stats">
+        <div class="modal-stat">
+          <div class="modal-stat-value" id="sessionDuration">25</div>
+          <div class="modal-stat-label">Minutes</div>
+        </div>
+        <div class="modal-stat">
+          <div class="modal-stat-value" id="sessionGrowth">+12%</div>
+          <div class="modal-stat-label">Growth</div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeModal('sessionCompleteModal')">Done</button>
+        <button class="btn btn-primary" onclick="closeModal('sessionCompleteModal'); toggleFocus();">Again</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Plant Detail Modal -->
+  <div class="modal-overlay" id="plantDetailModal">
+    <div class="modal">
+      <div class="plant-modal-display" id="plantModalDisplay"></div>
+      <div class="plant-modal-name" id="plantModalName">Moonpetal Orchid</div>
+      <div class="plant-modal-stage" id="plantModalStage">Blooming</div>
+      <p class="plant-modal-lore" id="plantModalLore">Blooms only under the light of patience. Its petals hold the memory of quiet moments.</p>
+      <div class="plant-modal-requirements">
+        <div class="requirement">
+          <svg class="requirement-icon" viewBox="0 0 24 24" fill="none" stroke="#e6c875" stroke-width="1.5">
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2"/>
+          </svg>
+          <div class="requirement-label">Focus</div>
+          <div class="requirement-value" id="plantModalFocus">2h</div>
+        </div>
+        <div class="requirement">
+          <svg class="requirement-icon" viewBox="0 0 24 24" fill="none" stroke="#7ba3b8" stroke-width="1.5">
+            <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+          </svg>
+          <div class="requirement-label">Boredom</div>
+          <div class="requirement-value" id="plantModalBoredom">1h</div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeModal('plantDetailModal')">Close</button>
+        <button class="btn btn-primary" onclick="selectPlant()" id="plantModalSelectBtn">Grow This</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Plant Selection Modal -->
+  <div class="modal-overlay" id="plantSelectModal">
+    <div class="modal" style="max-width: 380px;">
+      <div class="modal-header">
+        <h3>Choose a Seed</h3>
+        <p>Select a plant to grow in your garden</p>
+      </div>
+      <div id="plantSelectGrid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1.5rem;">
+        <!-- Seeds will be rendered here -->
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeModal('plantSelectModal')">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Boredom Prompt Modal -->
+  <div class="modal-overlay boredom-prompt-modal" id="boredomPromptModal">
+    <div class="modal">
+      <div class="boredom-prompt-icon" id="boredomPromptIcon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 16v-4M12 8h.01"/>
+        </svg>
+      </div>
+      <p class="boredom-prompt-title">A gentle suggestion...</p>
+      <p class="boredom-prompt-text" id="boredomPromptText">Look out a window for 30 seconds</p>
+      <div class="modal-actions" style="flex-direction: column; gap: 0.75rem;">
+        <button class="btn btn-primary" onclick="acceptBoredomPrompt()" style="width: 100%;">I'll try it</button>
+        <button class="btn btn-secondary" onclick="skipBoredomPrompt()" style="width: 100%;">Maybe later</button>
+      </div>
+      <p class="boredom-prompt-skip" onclick="disableBoredomPrompts()">Don't show these again</p>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">
+    <svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+      <polyline points="22 4 12 14.01 9 11.01"/>
+    </svg>
+    <span class="toast-text" id="toastText">Achievement unlocked!</span>
+  </div>
+
+  <!-- Install Prompt -->
+  <div class="install-prompt" id="installPrompt">
+    <div class="install-prompt-icon">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7cb890" stroke-width="2">
+        <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+      </svg>
+    </div>
+    <div class="install-prompt-text">
+      <strong>Add to Home Screen</strong>
+      <span>For the best experience</span>
+    </div>
+    <button class="install-prompt-btn" onclick="installApp()">Install</button>
+    <button class="install-prompt-close" onclick="dismissInstall()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"/>
+        <line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+
+  <script>
+    // ===== PLANT DATABASE =====
+    const PLANTS = [
+      {
+        id: 'moonpetal',
+        name: 'Moonpetal Orchid',
+        lore: 'Blooms only under the light of patience. Its petals hold the memory of quiet moments.',
+        focusRequired: 60,
+        boredomRequired: 30,
+        rarity: 'common',
+        bloomColor: '#c4a7e7',
+        centerColor: '#e6c875'
+      },
+      {
+        id: 'whisperleaf',
+        name: 'Whisperleaf Fern',
+        lore: 'Its fronds unfurl in silence, growing stronger with each moment of stillness.',
+        focusRequired: 45,
+        boredomRequired: 45,
+        rarity: 'common',
+        bloomColor: '#7cb890',
+        centerColor: '#5a8f6a'
+      },
+      {
+        id: 'sunweaver',
+        name: 'Sunweaver Lily',
+        lore: 'Drinks deeply from concentrated attention. Its golden heart pulses with stored focus.',
+        focusRequired: 90,
+        boredomRequired: 20,
+        rarity: 'common',
+        bloomColor: '#e6c875',
+        centerColor: '#d4a574'
+      },
+      {
+        id: 'driftbloom',
+        name: 'Driftbloom Rose',
+        lore: 'Born from daydreams and wandering thoughts. Thrives when the mind is free.',
+        focusRequired: 30,
+        boredomRequired: 60,
+        rarity: 'common',
+        bloomColor: '#d4a5a5',
+        centerColor: '#e6c875'
+      },
+      {
+        id: 'stillwater',
+        name: 'Stillwater Lotus',
+        lore: 'Rises from the depths of boredom. Each petal represents a moment of pure presence.',
+        focusRequired: 45,
+        boredomRequired: 75,
+        rarity: 'uncommon',
+        bloomColor: '#a5c4d4',
+        centerColor: '#e6c875'
+      },
+      {
+        id: 'ember',
+        name: 'Emberheart Tulip',
+        lore: 'Burns with the fire of sustained concentration. Handle with focused care.',
+        focusRequired: 120,
+        boredomRequired: 15,
+        rarity: 'uncommon',
+        bloomColor: '#e87878',
+        centerColor: '#e6c875'
+      },
+      {
+        id: 'twilight',
+        name: 'Twilight Iris',
+        lore: 'Exists between focus and rest. Blooms at the boundary of doing and being.',
+        focusRequired: 60,
+        boredomRequired: 60,
+        rarity: 'uncommon',
+        bloomColor: '#9b8ec4',
+        centerColor: '#c4a7e7'
+      },
+      {
+        id: 'ancient',
+        name: 'Ancient Bonsai',
+        lore: 'A miniature tree that takes centuries to grow, or merely weeks of deep attention.',
+        focusRequired: 180,
+        boredomRequired: 60,
+        rarity: 'rare',
+        bloomColor: '#5a8f6a',
+        centerColor: '#3d6b4a'
+      },
+      {
+        id: 'void',
+        name: 'Voidbloom',
+        lore: 'Grows only in complete absence of stimulation. The rarest flower in any garden.',
+        focusRequired: 30,
+        boredomRequired: 120,
+        rarity: 'rare',
+        bloomColor: '#2a3a32',
+        centerColor: '#c4a7e7'
+      },
+      {
+        id: 'crystal',
+        name: 'Crystal Succulent',
+        lore: 'Stores focus like water in a desert. Sparkles with accumulated attention.',
+        focusRequired: 90,
+        boredomRequired: 45,
+        rarity: 'uncommon',
+        bloomColor: '#b8d4e3',
+        centerColor: '#7ba3b8'
+      },
+      {
+        id: 'midnight',
+        name: 'Midnight Dahlia',
+        lore: 'Blooms in the darkest hours of concentration. Its petals absorb distraction.',
+        focusRequired: 150,
+        boredomRequired: 30,
+        rarity: 'rare',
+        bloomColor: '#1a2420',
+        centerColor: '#c4a7e7'
+      },
+      {
+        id: 'wanderer',
+        name: 'Wanderer\'s Moss',
+        lore: 'Spreads slowly across stones of stillness. Patient as the earth itself.',
+        focusRequired: 20,
+        boredomRequired: 90,
+        rarity: 'common',
+        bloomColor: '#5a8f6a',
+        centerColor: '#7cb890'
+      },
+      {
+        id: 'dream',
+        name: 'Dreamcatcher Vine',
+        lore: 'Weaves between conscious effort and unconscious rest. Catches stray thoughts.',
+        focusRequired: 75,
+        boredomRequired: 75,
+        rarity: 'rare',
+        bloomColor: '#c4a7e7',
+        centerColor: '#7ba3b8'
+      },
+      {
+        id: 'patience',
+        name: 'Patience Palm',
+        lore: 'A tall testament to sustained effort. Each frond represents a week of growth.',
+        focusRequired: 200,
+        boredomRequired: 100,
+        rarity: 'legendary',
+        bloomColor: '#7cb890',
+        centerColor: '#5a8f6a'
+      },
+      {
+        id: 'silence',
+        name: 'Silence Orchid',
+        lore: 'The mythical flower that blooms only in perfect stillness. Few have seen it.',
+        focusRequired: 60,
+        boredomRequired: 180,
+        rarity: 'legendary',
+        bloomColor: '#e8ede9',
+        centerColor: '#c4a7e7'
+      },
+      {
+        id: 'sunrise',
+        name: 'Sunrise Peony',
+        lore: 'Opens with the first light of attention. A symbol of new beginnings.',
+        focusRequired: 30,
+        boredomRequired: 15,
+        rarity: 'common',
+        bloomColor: '#f0c987',
+        centerColor: '#e87878'
+      },
+      {
+        id: 'storm',
+        name: 'Stormcloud Hydrangea',
+        lore: 'Clusters of focus gathered like clouds before rain. Beautiful in its intensity.',
+        focusRequired: 100,
+        boredomRequired: 50,
+        rarity: 'uncommon',
+        bloomColor: '#7ba3b8',
+        centerColor: '#5a8090'
+      },
+      {
+        id: 'memory',
+        name: 'Memory Sage',
+        lore: 'Its silver leaves hold the essence of every focused moment. Wisdom made visible.',
+        focusRequired: 80,
+        boredomRequired: 40,
+        rarity: 'uncommon',
+        bloomColor: '#a8b8a8',
+        centerColor: '#7cb890'
+      },
+      {
+        id: 'eternal',
+        name: 'Eternal Evergreen',
+        lore: 'Never loses its color. A monument to consistency and unwavering attention.',
+        focusRequired: 240,
+        boredomRequired: 120,
+        rarity: 'legendary',
+        bloomColor: '#3d6b4a',
+        centerColor: '#7cb890'
+      },
+      {
+        id: 'zen',
+        name: 'Zen Garden Stone',
+        lore: 'Not a plant at all, but the ultimate expression of stillness. Simply exists.',
+        focusRequired: 120,
+        boredomRequired: 240,
+        rarity: 'legendary',
+        bloomColor: '#4a5a52',
+        centerColor: '#6b7c70'
+      }
+    ];
+
+    const VOID_MESSAGES = [
+      "Let the rain fall on your garden",
+      "Breathe in... breathe out...",
+      "The void nurtures what focus cannot",
+      "In stillness, roots grow deeper",
+      "Nothing is happening. That's perfect.",
+      "Your garden drinks the silence",
+      "Rest is not the opposite of growth",
+      "The rain falls without effort",
+      "Boredom is the seed of creativity",
+      "Let thoughts drift like clouds",
+      "This moment is enough",
+      "The deepest roots grow in darkness"
+    ];
+
+    const BOREDOM_PROMPTS = [
+      { text: "Look out a window for 30 seconds", icon: "window" },
+      { text: "Draw a small doodle on paper", icon: "pencil" },
+      { text: "Notice three sounds around you", icon: "ear" },
+      { text: "Stretch your arms above your head", icon: "stretch" },
+      { text: "Close your eyes and count to 20", icon: "eye" },
+      { text: "Feel the texture of something nearby", icon: "hand" },
+      { text: "Take three deep breaths", icon: "breath" },
+      { text: "Think of someone you're grateful for", icon: "heart" },
+      { text: "Notice the colors in the room", icon: "color" },
+      { text: "Wiggle your toes 10 times", icon: "foot" },
+      { text: "Imagine a peaceful place", icon: "cloud" },
+      { text: "Listen to your heartbeat", icon: "heart" },
+      { text: "Name five things you can see", icon: "eye" },
+      { text: "Make up a tiny story in your head", icon: "book" },
+      { text: "Smile, even if you don't feel like it", icon: "smile" }
+    ];
+
+    const VOID_QUOTES = [
+      { quote: "Almost everything will work again if you unplug it for a few minutes, including you.", author: "Anne Lamott" },
+      { quote: "In the midst of movement and chaos, keep stillness inside of you.", author: "Deepak Chopra" },
+      { quote: "Boredom is the gateway to mind wandering, which helps our brains create new connections.", author: "Sandi Mann" },
+      { quote: "The greatest ideas come from boredom.", author: "Bertrand Russell" },
+      { quote: "Rest is not idleness.", author: "John Lubbock" }
+    ];
+
+    const STAGES = ['seed', 'sprout', 'growing', 'blooming', 'tree'];
+
+    // ===== STATE =====
+    let state = {
+      onboardingComplete: false,
+      currentPlant: null,
+      currentPlantProgress: { focus: 0, boredom: 0 },
+      gardenPlants: [],
+      unlockedPlants: [],
+      stats: {
+        totalFocusMinutes: 0,
+        totalBoredomMinutes: 0,
+        todayFocusMinutes: 0,
+        todayBoredomMinutes: 0,
+        streak: 0,
+        lastActiveDate: null,
+        weeklyData: [
+          { focus: 0, boredom: 0 },
+          { focus: 0, boredom: 0 },
+          { focus: 0, boredom: 0 },
+          { focus: 0, boredom: 0 },
+          { focus: 0, boredom: 0 },
+          { focus: 0, boredom: 0 },
+          { focus: 0, boredom: 0 }
+        ]
+      },
+      settings: {
+        lightTheme: false,
+        soundEnabled: false,
+        selectedSound: 'rain',
+        volume: 50,
+        boredomPromptsEnabled: true
+      }
+    };
+
+    // Audio context for ambient sounds
+    let audioContext = null;
+    let audioSource = null;
+    let gainNode = null;
+    let isPlaying = false;
+
+    // Timer state
+    let focusTimer = {
+      duration: 25 * 60,
+      remaining: 25 * 60,
+      isRunning: false,
+      interval: null
+    };
+
+    let voidTimer = {
+      elapsed: 0,
+      isRunning: false,
+      interval: null,
+      goal: 5 * 60
+    };
+
+    let selectedPlantForModal = null;
+
+    // Plant stage transition tracking
+    let previousStage = null;
+    let isTransitioning = false;
+
+    // ===== INITIALIZATION =====
+    function init() {
+      loadState();
+      checkDate();
+      renderUI();
+      setupEventListeners();
+      setupServiceWorker();
+      checkInstallPrompt();
+      applySettings();
+      randomizeVoidQuote();
+
+      if (!state.onboardingComplete) {
+        document.getElementById('onboarding').classList.remove('hidden');
+      } else {
+        document.getElementById('onboarding').classList.add('hidden');
+      }
+
+      // Generate rain drops
+      generateRainDrops();
+    }
+
+    function applySettings() {
+      // Apply theme
+      if (state.settings.lightTheme) {
+        document.body.classList.add('light-theme');
+        document.getElementById('themeToggle').classList.add('active');
+      }
+
+      // Apply sound settings UI
+      if (state.settings.soundEnabled) {
+        document.getElementById('soundToggle').classList.add('active');
+        document.getElementById('soundControls').style.display = 'flex';
+        document.getElementById('volumeSlider').style.display = 'block';
+        document.getElementById('soundIndicator').classList.add('visible');
+      }
+
+      // Apply boredom prompts toggle
+      if (state.settings.boredomPromptsEnabled) {
+        document.getElementById('promptsToggle').classList.add('active');
+      } else {
+        document.getElementById('promptsToggle').classList.remove('active');
+      }
+
+      // Apply selected sound button
+      document.querySelectorAll('.sound-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.sound === state.settings.selectedSound);
+      });
+
+      // Apply volume
+      document.getElementById('volumeRange').value = state.settings.volume;
+    }
+
+    function randomizeVoidQuote() {
+      const randomQuote = VOID_QUOTES[Math.floor(Math.random() * VOID_QUOTES.length)];
+      const quoteEl = document.querySelector('.void-quote');
+      const authorEl = document.querySelector('.void-author');
+      if (quoteEl && authorEl) {
+        quoteEl.textContent = `"${randomQuote.quote}"`;
+        authorEl.textContent = randomQuote.author;
+      }
+    }
+
+    function loadState() {
+      const saved = localStorage.getItem('stillness_state');
+      if (saved) {
+        state = { ...state, ...JSON.parse(saved) };
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem('stillness_state', JSON.stringify(state));
+    }
+
+    // ===== DAILY HISTORY TRACKING =====
+    function generateSampleHistory(days) {
+      const history = {};
+      const today = new Date();
+
+      for (let i = 0; i < days; i++) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+
+        // Random focus data with realistic variation
+        const hasFocus = Math.random() > 0.25;
+        if (hasFocus) {
+          history[dateStr] = {
+            focus: Math.floor(Math.random() * 80) + 15,
+            boredom: Math.floor(Math.random() * 40) + 5
+          };
+        }
+      }
+
+      return history;
+    }
+
+    function recordDailyHistory(focusMinutes, boredomMinutes) {
+      const today = new Date().toISOString().split('T')[0];
+
+      if (!state.stats.dailyHistory) {
+        state.stats.dailyHistory = {};
+      }
+
+      if (!state.stats.dailyHistory[today]) {
+        state.stats.dailyHistory[today] = { focus: 0, boredom: 0 };
+      }
+
+      state.stats.dailyHistory[today].focus += focusMinutes;
+      state.stats.dailyHistory[today].boredom += boredomMinutes;
+
+      // Prune old data (keep only 90 days)
+      pruneHistory(90);
+    }
+
+    function pruneHistory(maxDays) {
+      if (!state.stats.dailyHistory) return;
+
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - maxDays);
+      const cutoffStr = cutoff.toISOString().split('T')[0];
+
+      Object.keys(state.stats.dailyHistory).forEach(date => {
+        if (date < cutoffStr) {
+          delete state.stats.dailyHistory[date];
+        }
+      });
+    }
+
+    function checkDate() {
+      const today = new Date().toDateString();
+      if (state.stats.lastActiveDate !== today) {
+        // Shift weekly data
+        if (state.stats.lastActiveDate) {
+          const lastDate = new Date(state.stats.lastActiveDate);
+          const daysDiff = Math.floor((new Date() - lastDate) / (1000 * 60 * 60 * 24));
+
+          if (daysDiff === 1) {
+            state.stats.streak++;
+          } else if (daysDiff > 1) {
+            state.stats.streak = 1;
+          }
+
+          // Shift weekly data
+          for (let i = 0; i < Math.min(daysDiff, 7); i++) {
+            state.stats.weeklyData.pop();
+            state.stats.weeklyData.unshift({ focus: 0, boredom: 0 });
+          }
+        }
+
+        state.stats.todayFocusMinutes = 0;
+        state.stats.todayBoredomMinutes = 0;
+        state.stats.lastActiveDate = today;
+        saveState();
+      }
+    }
+
+    // ===== RENDERING =====
+    function renderUI() {
+      updateHomeStats();
+      updateCurrentPlant();
+      renderGarden();
+      renderWeeklyBars();
+      renderCollection();
+    }
+
+    function updateHomeStats() {
+      document.getElementById('todayFocus').innerHTML = formatMinutes(state.stats.todayFocusMinutes);
+      document.getElementById('todayBoredom').innerHTML = formatMinutes(state.stats.todayBoredomMinutes);
+      document.getElementById('totalPlants').textContent = state.gardenPlants.length;
+      document.getElementById('currentStreak').textContent = state.stats.streak;
+      document.getElementById('rareCount').textContent = state.gardenPlants.filter(p =>
+        ['rare', 'legendary'].includes(PLANTS.find(pl => pl.id === p.plantId)?.rarity)
+      ).length;
+      document.getElementById('gardenPlantCount').textContent = state.gardenPlants.length;
+      document.getElementById('gardenStreak').textContent = state.stats.streak;
+
+      // Update garden intro stats
+      const totalFocusHours = Math.floor(state.stats.totalFocusMinutes / 60);
+      const totalBoredomHours = Math.floor(state.stats.totalBoredomMinutes / 60);
+      document.getElementById('totalFocusHours').textContent = totalFocusHours;
+      document.getElementById('totalBoredomHours').textContent = totalBoredomHours;
+    }
+
+    function formatMinutes(mins) {
+      if (mins >= 60) {
+        const h = Math.floor(mins / 60);
+        const m = mins % 60;
+        return `${h}<span class="stat-unit">h</span> ${m}<span class="stat-unit">m</span>`;
+      }
+      return `${mins}<span class="stat-unit">m</span>`;
+    }
+
+    function updateCurrentPlant() {
+      if (!state.currentPlant) {
+        document.getElementById('currentPlantName').textContent = 'No plant selected';
+        document.getElementById('currentPlantStage').textContent = 'Tap to choose a seed';
+        document.getElementById('needSun').textContent = '—';
+        document.getElementById('needRain').textContent = '—';
+        document.getElementById('plantProgressFill').style.width = '0%';
+        document.getElementById('homePlantSvg').innerHTML = `
+          <text x="50" y="80" text-anchor="middle" fill="#3d4a42" font-family="Cormorant Garamond" font-size="12" font-style="italic">Tap to select</text>
+        `;
+        document.getElementById('focusPlantSvg').innerHTML = `
+          <text x="60" y="100" text-anchor="middle" fill="#3d4a42" font-family="Cormorant Garamond" font-size="12" font-style="italic">Select a plant first</text>
+        `;
+        document.getElementById('currentPlantCard').onclick = () => openPlantSelectModal();
+        return;
+      }
+
+      const plant = PLANTS.find(p => p.id === state.currentPlant);
+      const progress = state.currentPlantProgress;
+      const focusPercent = Math.min(progress.focus / plant.focusRequired * 100, 100);
+      const boredomPercent = Math.min(progress.boredom / plant.boredomRequired * 100, 100);
+      const totalPercent = (focusPercent + boredomPercent) / 2;
+      const stage = getStage(totalPercent);
+
+      document.getElementById('currentPlantName').textContent = plant.name;
+      document.getElementById('currentPlantStage').textContent = stage.charAt(0).toUpperCase() + stage.slice(1);
+      document.getElementById('needSun').textContent = `${Math.max(0, plant.focusRequired - progress.focus)}m`;
+      document.getElementById('needRain').textContent = `${Math.max(0, plant.boredomRequired - progress.boredom)}m`;
+      document.getElementById('plantProgressFill').style.width = `${totalPercent}%`;
+
+      // Check for stage transition
+      const stageIndex = STAGES.indexOf(stage);
+      const prevIndex = STAGES.indexOf(previousStage);
+
+      if (previousStage && stageIndex > prevIndex && !isTransitioning) {
+        // Stage increased - trigger transition animation
+        transitionPlantStage(plant, previousStage, stage, 'homePlantSvg', 'homePlantSvgNext', 100, 140);
+        transitionPlantStage(plant, previousStage, stage, 'focusPlantSvg', 'focusPlantSvgNext', 120, 180);
+      } else if (!isTransitioning) {
+        // No transition - direct update
+        const svg = generatePlantSVG(plant, stage, 100, 140);
+        document.getElementById('homePlantSvg').innerHTML = svg;
+        document.getElementById('focusPlantSvg').innerHTML = generatePlantSVG(plant, stage, 120, 180);
+      }
+
+      // Update previous stage tracker
+      previousStage = stage;
+
+      document.getElementById('currentPlantCard').onclick = () => showPlantDetail(plant.id);
+    }
+
+    function getStage(percent) {
+      if (percent < 15) return 'seed';
+      if (percent < 35) return 'sprout';
+      if (percent < 65) return 'growing';
+      if (percent < 100) return 'blooming';
+      return 'tree';
+    }
+
+    function generatePlantSVG(plant, stage, width, height) {
+      const cx = width / 2;
+      const bottom = height;
+
+      switch (stage) {
+        case 'seed':
+          return `
+            <ellipse cx="${cx}" cy="${bottom - 8}" rx="8" ry="5" fill="${plant.bloomColor}" opacity="0.6"/>
+            <path d="M${cx} ${bottom - 10} Q${cx} ${bottom - 18} ${cx} ${bottom - 22}" stroke="#7cb890" stroke-width="2" fill="none"/>
+          `;
+        case 'sprout':
+          return `
+            <path d="M${cx} ${bottom} Q${cx} ${bottom - 30} ${cx - 3} ${bottom - 50}" stroke="#7cb890" stroke-width="2.5" fill="none" stroke-linecap="round">
+              <animate attributeName="d" dur="4s" repeatCount="indefinite" values="M${cx} ${bottom} Q${cx} ${bottom - 30} ${cx - 3} ${bottom - 50};M${cx} ${bottom} Q${cx} ${bottom - 30} ${cx + 3} ${bottom - 50};M${cx} ${bottom} Q${cx} ${bottom - 30} ${cx - 3} ${bottom - 50}"/>
+            </path>
+            <ellipse cx="${cx - 12}" cy="${bottom - 45}" rx="12" ry="5" fill="#7cb890" transform="rotate(-25 ${cx - 12} ${bottom - 45})" opacity="0.8"/>
+            <ellipse cx="${cx + 10}" cy="${bottom - 52}" rx="10" ry="4" fill="#7cb890" transform="rotate(20 ${cx + 10} ${bottom - 52})" opacity="0.7"/>
+          `;
+        case 'growing':
+          return `
+            <path d="M${cx} ${bottom} Q${cx} ${bottom - 50} ${cx - 5} ${bottom - 80}" stroke="#7cb890" stroke-width="3" fill="none" stroke-linecap="round">
+              <animate attributeName="d" dur="5s" repeatCount="indefinite" values="M${cx} ${bottom} Q${cx} ${bottom - 50} ${cx - 5} ${bottom - 80};M${cx} ${bottom} Q${cx} ${bottom - 50} ${cx + 5} ${bottom - 80};M${cx} ${bottom} Q${cx} ${bottom - 50} ${cx - 5} ${bottom - 80}"/>
+            </path>
+            <ellipse cx="${cx - 18}" cy="${bottom - 60}" rx="18" ry="7" fill="#7cb890" transform="rotate(-30 ${cx - 18} ${bottom - 60})" opacity="0.8"/>
+            <ellipse cx="${cx + 15}" cy="${bottom - 70}" rx="15" ry="6" fill="#7cb890" transform="rotate(25 ${cx + 15} ${bottom - 70})" opacity="0.75"/>
+            <ellipse cx="${cx - 10}" cy="${bottom - 82}" rx="12" ry="5" fill="#7cb890" transform="rotate(-20 ${cx - 10} ${bottom - 82})" opacity="0.65"/>
+          `;
+        case 'blooming':
+          return `
+            <path d="M${cx} ${bottom} Q${cx} ${bottom - 60} ${cx - 5} ${bottom - 100} Q${cx - 8} ${bottom - 120} ${cx} ${bottom - 130}" stroke="#7cb890" stroke-width="3" fill="none" stroke-linecap="round">
+              <animate attributeName="d" dur="5s" repeatCount="indefinite" values="M${cx} ${bottom} Q${cx} ${bottom - 60} ${cx - 5} ${bottom - 100} Q${cx - 8} ${bottom - 120} ${cx} ${bottom - 130};M${cx} ${bottom} Q${cx} ${bottom - 60} ${cx + 5} ${bottom - 100} Q${cx + 8} ${bottom - 120} ${cx} ${bottom - 130};M${cx} ${bottom} Q${cx} ${bottom - 60} ${cx - 5} ${bottom - 100} Q${cx - 8} ${bottom - 120} ${cx} ${bottom - 130}"/>
+            </path>
+            <ellipse cx="${cx - 22}" cy="${bottom - 70}" rx="22" ry="8" fill="#7cb890" transform="rotate(-35 ${cx - 22} ${bottom - 70})" opacity="0.85"/>
+            <ellipse cx="${cx + 20}" cy="${bottom - 85}" rx="20" ry="7" fill="#7cb890" transform="rotate(30 ${cx + 20} ${bottom - 85})" opacity="0.75"/>
+            <ellipse cx="${cx - 15}" cy="${bottom - 100}" rx="16" ry="6" fill="#7cb890" transform="rotate(-25 ${cx - 15} ${bottom - 100})" opacity="0.65"/>
+            <circle cx="${cx}" cy="${bottom - 135}" r="14" fill="${plant.bloomColor}" opacity="0.9">
+              <animate attributeName="r" dur="3s" repeatCount="indefinite" values="14;16;14"/>
+            </circle>
+            <circle cx="${cx}" cy="${bottom - 135}" r="6" fill="${plant.centerColor}" opacity="0.9"/>
+          `;
+        case 'tree':
+          return `
+            <path d="M${cx} ${bottom} Q${cx} ${bottom - 40} ${cx} ${bottom - 70}" stroke="#5a8f6a" stroke-width="5" fill="none"/>
+            <circle cx="${cx}" cy="${bottom - 85}" r="28" fill="${plant.bloomColor}" opacity="0.85">
+              <animate attributeName="r" dur="4s" repeatCount="indefinite" values="28;30;28"/>
+            </circle>
+            <circle cx="${cx - 15}" cy="${bottom - 100}" r="18" fill="#7cb890" opacity="0.75"/>
+            <circle cx="${cx + 18}" cy="${bottom - 95}" r="15" fill="#7cb890" opacity="0.7"/>
+            <circle cx="${cx}" cy="${bottom - 110}" r="12" fill="${plant.bloomColor}" opacity="0.6"/>
+          `;
+        default:
+          return '';
+      }
+    }
+
+    function transitionPlantStage(plant, fromStage, toStage, currentId, nextId, width, height) {
+      if (isTransitioning) return;
+      isTransitioning = true;
+
+      const currentSvg = document.getElementById(currentId);
+      const nextSvg = document.getElementById(nextId);
+
+      if (!currentSvg || !nextSvg) {
+        isTransitioning = false;
+        return;
+      }
+
+      // Generate new stage SVG in the next container
+      nextSvg.innerHTML = generatePlantSVG(plant, toStage, width, height);
+
+      // Start transition
+      currentSvg.classList.add('transitioning-out');
+      nextSvg.classList.add('transitioning-in');
+
+      // After transition completes (2s duration from CSS)
+      setTimeout(() => {
+        // Swap content
+        currentSvg.innerHTML = nextSvg.innerHTML;
+        currentSvg.classList.remove('transitioning-out');
+        nextSvg.classList.remove('transitioning-in');
+        nextSvg.innerHTML = '';
+
+        // Reset to base classes
+        currentSvg.classList.add('plant-current');
+        nextSvg.classList.add('plant-next');
+
+        // Celebration pulse
+        currentSvg.classList.add('growth-complete');
+        setTimeout(() => {
+          currentSvg.classList.remove('growth-complete');
+        }, 2000);
+
+        isTransitioning = false;
+      }, 2000);
+    }
+
+    function renderGarden() {
+      const grid = document.getElementById('gardenGrid');
+      grid.innerHTML = '';
+
+      // Show grown plants
+      state.gardenPlants.slice(0, 9).forEach((gardenPlant, index) => {
+        const plant = PLANTS.find(p => p.id === gardenPlant.plantId);
+        const cell = document.createElement('div');
+        cell.className = 'garden-cell';
+        cell.innerHTML = `
+          <span class="garden-cell-stage">${gardenPlant.stage}</span>
+          <svg class="mini-plant" width="60" height="90" viewBox="0 0 60 90">
+            ${generatePlantSVG(plant, gardenPlant.stage, 60, 90)}
+          </svg>
+        `;
+        cell.onclick = () => showPlantDetail(plant.id, gardenPlant);
+        grid.appendChild(cell);
+      });
+
+      // Fill empty cells
+      const emptyCount = Math.max(0, 9 - state.gardenPlants.length);
+      for (let i = 0; i < emptyCount; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'garden-cell empty';
+        cell.onclick = () => openPlantSelectModal();
+        grid.appendChild(cell);
+      }
+    }
+
+    function renderWeeklyBars() {
+      const container = document.getElementById('weeklyBars');
+      const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+      const today = new Date().getDay();
+      const todayIndex = today === 0 ? 6 : today - 1;
+
+      container.innerHTML = state.stats.weeklyData.map((day, i) => {
+        const focusHeight = Math.min(day.focus / 2, 50);
+        const boredomHeight = Math.min(day.boredom / 2, 30);
+        const isToday = i === todayIndex;
+
+        return `
+          <div class="weekly-bar">
+            <div class="bar-stack">
+              <div class="bar-fill bar-focus" style="height: ${focusHeight}px;"></div>
+              <div class="bar-fill bar-boredom" style="height: ${boredomHeight}px;"></div>
+            </div>
+            <span class="bar-label ${isToday ? 'today' : ''}">${days[i]}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ===== FOCUS HISTORY CALENDAR =====
+    function renderFocusCalendar(days = 91) {
+      const calendar = document.getElementById('focusCalendar');
+      const monthsContainer = document.getElementById('calendarMonths');
+      if (!calendar) return;
+
+      const today = new Date();
+      const history = state.stats.dailyHistory || {};
+
+      // Calculate max for intensity scaling
+      const values = Object.values(history).map(d => d.focus);
+      const maxFocus = Math.max(...values, 60);
+
+      // Generate cells for 91 days (13 weeks)
+      let cells = [];
+      let monthsSet = new Map();
+
+      // Start from the beginning of the week containing (today - days)
+      const startDate = new Date(today);
+      startDate.setDate(startDate.getDate() - days + 1);
+      // Adjust to start of week (Monday)
+      const dayOfWeek = startDate.getDay();
+      const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      startDate.setDate(startDate.getDate() - daysToMonday);
+
+      const endDate = new Date(today);
+      const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+
+      for (let i = 0; i < totalDays; i++) {
+        const date = new Date(startDate);
+        date.setDate(date.getDate() + i);
+        const dateStr = date.toISOString().split('T')[0];
+        const dayData = history[dateStr] || { focus: 0, boredom: 0 };
+
+        // Track months for labels
+        const monthKey = date.toLocaleDateString('en-US', { month: 'short' });
+        const weekNum = Math.floor(i / 7);
+        if (!monthsSet.has(monthKey) || monthsSet.get(monthKey) > weekNum) {
+          monthsSet.set(monthKey, weekNum);
+        }
+
+        // Calculate intensity level (0-4)
+        let level = 0;
+        if (dayData.focus > 0) {
+          const ratio = dayData.focus / maxFocus;
+          if (ratio >= 0.75) level = 4;
+          else if (ratio >= 0.5) level = 3;
+          else if (ratio >= 0.25) level = 2;
+          else level = 1;
+        }
+
+        const isToday = dateStr === today.toISOString().split('T')[0];
+        const isFuture = date > today;
+
+        cells.push(`
+          <div class="calendar-cell level-${level} ${isToday ? 'today' : ''} ${isFuture ? 'future' : ''}"
+               data-date="${dateStr}"
+               title="${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}: ${dayData.focus}m focus">
+          </div>
+        `);
+      }
+
+      calendar.innerHTML = cells.join('');
+
+      // Render month labels
+      const sortedMonths = [...monthsSet.entries()].sort((a, b) => a[1] - b[1]);
+      monthsContainer.innerHTML = sortedMonths.map(([month]) =>
+        `<span class="month-label">${month}</span>`
+      ).join('');
+
+      // Update summary stats
+      updateCalendarSummary(history);
+    }
+
+    function updateCalendarSummary(history) {
+      const entries = Object.entries(history);
+
+      // Active days
+      const activeDays = entries.filter(([_, d]) => d.focus > 0).length;
+      const totalDaysEl = document.getElementById('calendarTotalDays');
+      if (totalDaysEl) totalDaysEl.textContent = activeDays;
+
+      // Total focus hours
+      const totalMinutes = entries.reduce((sum, [_, d]) => sum + d.focus, 0);
+      const totalHours = Math.floor(totalMinutes / 60);
+      const totalFocusEl = document.getElementById('calendarTotalFocus');
+      if (totalFocusEl) totalFocusEl.textContent = `${totalHours}h`;
+
+      // Longest streak
+      const longestStreak = calculateLongestStreak(history);
+      const streakEl = document.getElementById('calendarLongestStreak');
+      if (streakEl) streakEl.textContent = longestStreak;
+    }
+
+    function calculateLongestStreak(history) {
+      const dates = Object.keys(history)
+        .filter(d => history[d].focus > 0)
+        .sort();
+
+      if (dates.length === 0) return 0;
+
+      let longest = 1;
+      let current = 1;
+
+      for (let i = 1; i < dates.length; i++) {
+        const prev = new Date(dates[i - 1]);
+        const curr = new Date(dates[i]);
+        const diff = Math.round((curr - prev) / (1000 * 60 * 60 * 24));
+
+        if (diff === 1) {
+          current++;
+          longest = Math.max(longest, current);
+        } else {
+          current = 1;
+        }
+      }
+
+      return longest;
+    }
+
+    function renderCollection() {
+      const grid = document.getElementById('collectionGrid');
+      const unlockedCount = state.unlockedPlants.length;
+
+      document.getElementById('collectionCount').textContent = `${unlockedCount} / ${PLANTS.length}`;
+
+      grid.innerHTML = PLANTS.map(plant => {
+        const isUnlocked = state.unlockedPlants.includes(plant.id);
+        return `
+          <div class="collection-item ${isUnlocked ? 'unlocked' : 'locked'}"
+               onclick="${isUnlocked ? `showPlantDetail('${plant.id}')` : ''}">
+            ${isUnlocked ? `
+              <svg width="24" height="24" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="8" fill="${plant.bloomColor}" opacity="0.8"/>
+                <circle cx="12" cy="12" r="3" fill="${plant.centerColor}"/>
+              </svg>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ===== EVENT LISTENERS =====
+    function setupEventListeners() {
+      // Navigation
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+          const screen = e.target.dataset.screen;
+          showScreen(screen);
+        });
+      });
+
+      // Duration selector
+      document.querySelectorAll('.duration-option').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          if (focusTimer.isRunning) return;
+
+          document.querySelectorAll('.duration-option').forEach(b => b.classList.remove('active'));
+          e.target.classList.add('active');
+
+          const minutes = parseInt(e.target.dataset.minutes);
+          focusTimer.duration = minutes * 60;
+          focusTimer.remaining = minutes * 60;
+          updateTimerDisplay();
+        });
+      });
+    }
+
+    // ===== SCREEN NAVIGATION =====
+    function showScreen(screenId) {
+      const currentScreen = document.querySelector('.screen.active');
+      const newScreen = document.getElementById(screenId);
+
+      if (currentScreen === newScreen) return;
+
+      // Update nav
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.toggle('active', item.dataset.screen === screenId);
+      });
+
+      // Transition
+      if (currentScreen) {
+        currentScreen.classList.add('exiting');
+        setTimeout(() => {
+          currentScreen.classList.remove('active', 'exiting');
+          newScreen.classList.add('active');
+          newScreen.scrollTop = 0;
+        }, 300);
+      } else {
+        newScreen.classList.add('active');
+        newScreen.scrollTop = 0;
+      }
+
+      window.scrollTo(0, 0);
+
+      // Handle void screen ambient changes
+      if (screenId === 'void') {
+        document.querySelector('.orb-1').style.background = 'var(--accent-rain)';
+        document.querySelector('.orb-2').style.background = 'var(--accent-ice)';
+      } else {
+        document.querySelector('.orb-1').style.background = 'var(--accent-growth)';
+        document.querySelector('.orb-2').style.background = 'var(--accent-bloom)';
+      }
+
+      // Render focus calendar when settings is shown
+      if (screenId === 'settings') {
+        setTimeout(() => renderFocusCalendar(), 100);
+      }
+    }
+
+    // ===== FOCUS TIMER =====
+    function toggleFocus() {
+      if (!state.currentPlant) {
+        openPlantSelectModal();
+        return;
+      }
+
+      if (focusTimer.isRunning) {
+        pauseFocus();
+      } else {
+        startFocus();
+      }
+    }
+
+    function startFocus() {
+      focusTimer.isRunning = true;
+      updateFocusUI(true);
+
+      focusTimer.interval = setInterval(() => {
+        focusTimer.remaining--;
+        updateTimerDisplay();
+
+        if (focusTimer.remaining <= 0) {
+          completeFocusSession();
+        }
+      }, 1000);
+
+      // Haptic feedback
+      if (navigator.vibrate) {
+        navigator.vibrate(50);
+      }
+    }
+
+    function pauseFocus() {
+      focusTimer.isRunning = false;
+      clearInterval(focusTimer.interval);
+      updateFocusUI(false);
+    }
+
+    function stopFocus() {
+      const elapsed = focusTimer.duration - focusTimer.remaining;
+      const minutes = Math.floor(elapsed / 60);
+
+      if (minutes > 0) {
+        addFocusMinutes(minutes);
+      }
+
+      focusTimer.isRunning = false;
+      clearInterval(focusTimer.interval);
+      focusTimer.remaining = focusTimer.duration;
+      updateTimerDisplay();
+      updateFocusUI(false);
+    }
+
+    function skipToEnd() {
+      completeFocusSession();
+    }
+
+    function completeFocusSession() {
+      focusTimer.isRunning = false;
+      clearInterval(focusTimer.interval);
+
+      const minutes = Math.floor(focusTimer.duration / 60);
+      addFocusMinutes(minutes);
+
+      // Show completion modal
+      document.getElementById('sessionDuration').textContent = minutes;
+      const growthPercent = state.currentPlant ?
+        Math.round((minutes / PLANTS.find(p => p.id === state.currentPlant).focusRequired) * 100) : 0;
+      document.getElementById('sessionGrowth').textContent = `+${growthPercent}%`;
+      openModal('sessionCompleteModal');
+
+      // Reset timer
+      focusTimer.remaining = focusTimer.duration;
+      updateTimerDisplay();
+      updateFocusUI(false);
+
+      // Haptic feedback
+      if (navigator.vibrate) {
+        navigator.vibrate([100, 50, 100]);
+      }
+
+      // Check if plant is complete
+      checkPlantCompletion();
+    }
+
+    function addFocusMinutes(minutes) {
+      state.stats.todayFocusMinutes += minutes;
+      state.stats.totalFocusMinutes += minutes;
+      state.stats.weeklyData[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1].focus += minutes;
+
+      // Record to daily history
+      recordDailyHistory(minutes, 0);
+
+      if (state.currentPlant) {
+        state.currentPlantProgress.focus += minutes;
+      }
+
+      saveState();
+      renderUI();
+    }
+
+    function updateTimerDisplay() {
+      const mins = Math.floor(focusTimer.remaining / 60);
+      const secs = focusTimer.remaining % 60;
+      document.getElementById('timerDisplay').textContent =
+        `${mins}:${secs.toString().padStart(2, '0')}`;
+
+      // Update ring progress
+      const circumference = 2 * Math.PI * 90;
+      const progress = (focusTimer.duration - focusTimer.remaining) / focusTimer.duration;
+      document.getElementById('timerProgress').style.strokeDashoffset =
+        circumference * (1 - progress);
+    }
+
+    function updateFocusUI(isRunning) {
+      const playPauseIcon = document.getElementById('playPauseIcon');
+      const btnStop = document.getElementById('btnStop');
+      const btnSkip = document.getElementById('btnSkip');
+      const focusStatus = document.getElementById('focusStatus');
+      const sunRays = document.getElementById('sunRays');
+      const timerLabel = document.getElementById('timerLabel');
+      const durationSelector = document.getElementById('durationSelector');
+
+      if (isRunning) {
+        playPauseIcon.innerHTML = '<rect x="7" y="6" width="4" height="12" rx="1"/><rect x="13" y="6" width="4" height="12" rx="1"/>';
+        btnStop.style.opacity = '1';
+        btnStop.style.pointerEvents = 'auto';
+        btnSkip.style.opacity = '1';
+        btnSkip.style.pointerEvents = 'auto';
+        focusStatus.style.opacity = '1';
+        sunRays.style.opacity = '1';
+        timerLabel.textContent = 'Focusing';
+        durationSelector.style.opacity = '0.3';
+        durationSelector.style.pointerEvents = 'none';
+      } else {
+        playPauseIcon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"/>';
+        btnStop.style.opacity = '0.3';
+        btnStop.style.pointerEvents = 'none';
+        btnSkip.style.opacity = '0.3';
+        btnSkip.style.pointerEvents = 'none';
+        focusStatus.style.opacity = '0';
+        sunRays.style.opacity = '0';
+        timerLabel.textContent = focusTimer.remaining === focusTimer.duration ? 'Ready' : 'Paused';
+        durationSelector.style.opacity = '1';
+        durationSelector.style.pointerEvents = 'auto';
+      }
+    }
+
+    // ===== VOID/BOREDOM MODE =====
+    function toggleVoid() {
+      if (voidTimer.isRunning) {
+        stopVoid();
+      } else {
+        startVoid();
+      }
+    }
+
+    function startVoid() {
+      if (!state.currentPlant) {
+        openPlantSelectModal();
+        showScreen('home');
+        return;
+      }
+
+      voidTimer.isRunning = true;
+      voidTimer.elapsed = 0;
+      document.getElementById('voidToggleBtn').textContent = 'End';
+
+      // Change void message periodically
+      let messageIndex = 0;
+      const updateMessage = () => {
+        document.getElementById('voidMessage').textContent = VOID_MESSAGES[messageIndex];
+        messageIndex = (messageIndex + 1) % VOID_MESSAGES.length;
+      };
+      updateMessage();
+      const messageInterval = setInterval(updateMessage, 15000);
+
+      voidTimer.interval = setInterval(() => {
+        voidTimer.elapsed++;
+        updateVoidDisplay();
+
+        if (voidTimer.elapsed >= voidTimer.goal) {
+          // Goal reached - show boredom prompt if enabled
+          if (state.settings.boredomPromptsEnabled) {
+            showBoredomPrompt();
+          } else {
+            showToast('Goal reached! Keep going...');
+          }
+          voidTimer.goal += 5 * 60; // Extend goal
+        }
+      }, 1000);
+
+      // Store message interval to clear later
+      voidTimer.messageInterval = messageInterval;
+
+      if (navigator.vibrate) {
+        navigator.vibrate(30);
+      }
+    }
+
+    function stopVoid() {
+      voidTimer.isRunning = false;
+      clearInterval(voidTimer.interval);
+      clearInterval(voidTimer.messageInterval);
+      document.getElementById('voidToggleBtn').textContent = 'Begin';
+
+      const minutes = Math.floor(voidTimer.elapsed / 60);
+      if (minutes > 0) {
+        addBoredomMinutes(minutes);
+        showToast(`+${minutes} minutes of stillness`);
+      }
+
+      voidTimer.elapsed = 0;
+      voidTimer.goal = 5 * 60;
+      updateVoidDisplay();
+
+      checkPlantCompletion();
+    }
+
+    function updateVoidDisplay() {
+      const mins = Math.floor(voidTimer.elapsed / 60);
+      const secs = voidTimer.elapsed % 60;
+      document.getElementById('voidTimer').textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+
+      const progress = Math.min((voidTimer.elapsed / voidTimer.goal) * 100, 100);
+      document.getElementById('voidProgressFill').style.width = `${progress}%`;
+      document.getElementById('voidGoalText').textContent = `${Math.floor(voidTimer.goal / 60)} min`;
+    }
+
+    function addBoredomMinutes(minutes) {
+      state.stats.todayBoredomMinutes += minutes;
+      state.stats.totalBoredomMinutes += minutes;
+      state.stats.weeklyData[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1].boredom += minutes;
+
+      // Record to daily history
+      recordDailyHistory(0, minutes);
+
+      if (state.currentPlant) {
+        state.currentPlantProgress.boredom += minutes;
+      }
+
+      saveState();
+      renderUI();
+    }
+
+    // ===== PLANT MANAGEMENT =====
+    function checkPlantCompletion() {
+      if (!state.currentPlant) return;
+
+      const plant = PLANTS.find(p => p.id === state.currentPlant);
+      const progress = state.currentPlantProgress;
+
+      if (progress.focus >= plant.focusRequired && progress.boredom >= plant.boredomRequired) {
+        // Plant complete!
+        const newGardenPlant = {
+          plantId: plant.id,
+          stage: 'tree',
+          completedAt: new Date().toISOString()
+        };
+
+        state.gardenPlants.unshift(newGardenPlant);
+
+        if (!state.unlockedPlants.includes(plant.id)) {
+          state.unlockedPlants.push(plant.id);
+          showToast(`New plant unlocked: ${plant.name}!`);
+        } else {
+          showToast(`${plant.name} fully grown!`);
+        }
+
+        // Reset current plant
+        state.currentPlant = null;
+        state.currentPlantProgress = { focus: 0, boredom: 0 };
+
+        saveState();
+        renderUI();
+      }
+    }
+
+    function openPlantSelectModal() {
+      const grid = document.getElementById('plantSelectGrid');
+
+      // Show available plants (common + unlocked)
+      const available = PLANTS.filter(p =>
+        p.rarity === 'common' || state.unlockedPlants.includes(p.id)
+      );
+
+      grid.innerHTML = available.map(plant => `
+        <div class="garden-cell" style="aspect-ratio: 1; cursor: pointer;"
+             onclick="selectPlantFromModal('${plant.id}')">
+          <span class="garden-cell-stage" style="font-size: 0.5rem;">${plant.rarity}</span>
+          <svg width="40" height="60" viewBox="0 0 40 60">
+            <circle cx="20" cy="25" r="12" fill="${plant.bloomColor}" opacity="0.8"/>
+            <circle cx="20" cy="25" r="5" fill="${plant.centerColor}"/>
+            <path d="M20 37 L20 55" stroke="#7cb890" stroke-width="2"/>
+          </svg>
+        </div>
+      `).join('');
+
+      openModal('plantSelectModal');
+    }
+
+    function selectPlantFromModal(plantId) {
+      state.currentPlant = plantId;
+      state.currentPlantProgress = { focus: 0, boredom: 0 };
+      saveState();
+      closeModal('plantSelectModal');
+      renderUI();
+      showToast(`Started growing ${PLANTS.find(p => p.id === plantId).name}`);
+    }
+
+    function showPlantDetail(plantId, gardenPlant = null) {
+      const plant = PLANTS.find(p => p.id === plantId);
+      selectedPlantForModal = plantId;
+
+      const stage = gardenPlant ? gardenPlant.stage : 'blooming';
+
+      document.getElementById('plantModalDisplay').innerHTML = `
+        <svg width="100" height="140" viewBox="0 0 100 140">
+          ${generatePlantSVG(plant, stage, 100, 140)}
+        </svg>
+      `;
+      document.getElementById('plantModalName').textContent = plant.name;
+      document.getElementById('plantModalStage').textContent = stage.charAt(0).toUpperCase() + stage.slice(1);
+      document.getElementById('plantModalLore').textContent = plant.lore;
+      document.getElementById('plantModalFocus').textContent = `${plant.focusRequired}m`;
+      document.getElementById('plantModalBoredom').textContent = `${plant.boredomRequired}m`;
+
+      const selectBtn = document.getElementById('plantModalSelectBtn');
+      if (gardenPlant || state.currentPlant === plantId) {
+        selectBtn.style.display = 'none';
+      } else {
+        selectBtn.style.display = 'block';
+      }
+
+      openModal('plantDetailModal');
+    }
+
+    function selectPlant() {
+      if (selectedPlantForModal) {
+        state.currentPlant = selectedPlantForModal;
+        state.currentPlantProgress = { focus: 0, boredom: 0 };
+        saveState();
+        closeModal('plantDetailModal');
+        renderUI();
+        showToast(`Started growing ${PLANTS.find(p => p.id === selectedPlantForModal).name}`);
+      }
+    }
+
+    // ===== MODALS =====
+    function openModal(modalId) {
+      document.getElementById(modalId).classList.add('active');
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.remove('active');
+    }
+
+    // ===== ONBOARDING =====
+    let currentOnboardingStep = 1;
+
+    function nextOnboardingStep() {
+      document.querySelector(`.onboarding-step[data-step="${currentOnboardingStep}"]`).classList.remove('active');
+      currentOnboardingStep++;
+      document.querySelector(`.onboarding-step[data-step="${currentOnboardingStep}"]`).classList.add('active');
+
+      document.querySelectorAll('.onboarding-dot').forEach((dot, i) => {
+        dot.classList.toggle('active', i === currentOnboardingStep - 1);
+      });
+    }
+
+    function completeOnboarding() {
+      state.onboardingComplete = true;
+      saveState();
+      document.getElementById('onboarding').classList.add('hidden');
+      openPlantSelectModal();
+    }
+
+    function skipOnboarding() {
+      state.onboardingComplete = true;
+      saveState();
+      document.getElementById('onboarding').classList.add('hidden');
+    }
+
+    // ===== TOAST =====
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastText').textContent = message;
+      toast.classList.add('show');
+
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
+    // ===== RAIN EFFECT =====
+    function generateRainDrops() {
+      const container = document.getElementById('rainContainer');
+      for (let i = 0; i < 50; i++) {
+        const drop = document.createElement('div');
+        drop.className = 'raindrop';
+        drop.style.left = `${Math.random() * 100}%`;
+        drop.style.animationDelay = `${Math.random() * 2}s`;
+        drop.style.animationDuration = `${1 + Math.random() * 0.5}s`;
+        container.appendChild(drop);
+      }
+    }
+
+    // ===== PWA =====
+    function setupServiceWorker() {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      }
+    }
+
+    let deferredPrompt;
+    function checkInstallPrompt() {
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+
+        // Show install prompt after a delay if not dismissed
+        if (!localStorage.getItem('installDismissed')) {
+          setTimeout(() => {
+            document.getElementById('installPrompt').classList.add('show');
+          }, 30000);
+        }
+      });
+    }
+
+    function installApp() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(() => {
+          deferredPrompt = null;
+          document.getElementById('installPrompt').classList.remove('show');
+        });
+      }
+    }
+
+    function dismissInstall() {
+      document.getElementById('installPrompt').classList.remove('show');
+      localStorage.setItem('installDismissed', 'true');
+    }
+
+    // ===== TASK MODAL =====
+    function showTaskModal() {
+      const task = prompt('What are you focusing on?');
+      if (task) {
+        document.getElementById('focusTaskText').textContent = task;
+      }
+    }
+
+    // ===== SETTINGS =====
+    function toggleTheme() {
+      state.settings.lightTheme = !state.settings.lightTheme;
+      document.body.classList.toggle('light-theme', state.settings.lightTheme);
+      document.getElementById('themeToggle').classList.toggle('active', state.settings.lightTheme);
+      saveState();
+
+      // Update meta theme color
+      const metaTheme = document.querySelector('meta[name="theme-color"]');
+      metaTheme.content = state.settings.lightTheme ? '#f5f7f6' : '#0a0f0d';
+    }
+
+    function toggleSound() {
+      state.settings.soundEnabled = !state.settings.soundEnabled;
+      document.getElementById('soundToggle').classList.toggle('active', state.settings.soundEnabled);
+      document.getElementById('soundControls').style.display = state.settings.soundEnabled ? 'flex' : 'none';
+      document.getElementById('volumeSlider').style.display = state.settings.soundEnabled ? 'block' : 'none';
+      document.getElementById('soundIndicator').classList.toggle('visible', state.settings.soundEnabled);
+      saveState();
+
+      if (state.settings.soundEnabled) {
+        playAmbientSound(state.settings.selectedSound);
+      } else {
+        stopAmbientSound();
+      }
+    }
+
+    function selectSound(soundType) {
+      state.settings.selectedSound = soundType;
+      document.querySelectorAll('.sound-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.sound === soundType);
+      });
+      saveState();
+
+      if (state.settings.soundEnabled) {
+        playAmbientSound(soundType);
+      }
+    }
+
+    function setVolume(value) {
+      state.settings.volume = parseInt(value);
+      if (gainNode) {
+        gainNode.gain.value = value / 100;
+      }
+      saveState();
+    }
+
+    function togglePrompts() {
+      state.settings.boredomPromptsEnabled = !state.settings.boredomPromptsEnabled;
+      document.getElementById('promptsToggle').classList.toggle('active', state.settings.boredomPromptsEnabled);
+      saveState();
+    }
+
+    function resetData() {
+      if (confirm('Are you sure you want to reset all data? This cannot be undone.')) {
+        localStorage.removeItem('stillness_state');
+        location.reload();
+      }
+    }
+
+    // ===== AMBIENT SOUND SYSTEM =====
+    // Using Web Audio API with oscillators for ambient sounds (no external files needed)
+    function playAmbientSound(soundType) {
+      stopAmbientSound();
+
+      try {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        gainNode = audioContext.createGain();
+        gainNode.gain.value = state.settings.volume / 100;
+        gainNode.connect(audioContext.destination);
+
+        switch (soundType) {
+          case 'rain':
+            createRainSound();
+            break;
+          case 'forest':
+            createForestSound();
+            break;
+          case 'waves':
+            createWavesSound();
+            break;
+          case 'wind':
+            createWindSound();
+            break;
+        }
+
+        isPlaying = true;
+        document.getElementById('soundIndicator').classList.add('playing');
+      } catch (e) {
+        console.log('Audio not supported');
+      }
+    }
+
+    function stopAmbientSound() {
+      if (audioContext) {
+        audioContext.close();
+        audioContext = null;
+      }
+      isPlaying = false;
+      document.getElementById('soundIndicator').classList.remove('playing');
+    }
+
+    function toggleSoundFromIndicator() {
+      if (isPlaying) {
+        stopAmbientSound();
+        state.settings.soundEnabled = false;
+        document.getElementById('soundToggle').classList.remove('active');
+      } else if (state.settings.soundEnabled) {
+        playAmbientSound(state.settings.selectedSound);
+      } else {
+        toggleSound();
+      }
+      saveState();
+    }
+
+    // Generate ambient sounds using Web Audio API
+    function createRainSound() {
+      // Create brown noise for rain
+      const bufferSize = 2 * audioContext.sampleRate;
+      const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+      const output = buffer.getChannelData(0);
+
+      let lastOut = 0;
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        output[i] = (lastOut + (0.02 * white)) / 1.02;
+        lastOut = output[i];
+        output[i] *= 3.5;
+      }
+
+      const noise = audioContext.createBufferSource();
+      noise.buffer = buffer;
+      noise.loop = true;
+
+      // Filter for rain-like sound
+      const filter = audioContext.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = 400;
+
+      noise.connect(filter);
+      filter.connect(gainNode);
+      noise.start();
+    }
+
+    function createForestSound() {
+      // Combine brown noise with some chirps
+      const bufferSize = 2 * audioContext.sampleRate;
+      const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+      const output = buffer.getChannelData(0);
+
+      let lastOut = 0;
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        output[i] = (lastOut + (0.01 * white)) / 1.01;
+        lastOut = output[i];
+        output[i] *= 2;
+      }
+
+      const noise = audioContext.createBufferSource();
+      noise.buffer = buffer;
+      noise.loop = true;
+
+      const filter = audioContext.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.value = 800;
+      filter.Q.value = 0.5;
+
+      noise.connect(filter);
+      filter.connect(gainNode);
+      noise.start();
+    }
+
+    function createWavesSound() {
+      // Create wave-like oscillation
+      const bufferSize = 4 * audioContext.sampleRate;
+      const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+      const output = buffer.getChannelData(0);
+
+      for (let i = 0; i < bufferSize; i++) {
+        const t = i / audioContext.sampleRate;
+        const wave = Math.sin(2 * Math.PI * 0.1 * t) * 0.5 + 0.5;
+        const noise = (Math.random() * 2 - 1) * 0.3;
+        output[i] = (wave * noise) * 2;
+      }
+
+      const noise = audioContext.createBufferSource();
+      noise.buffer = buffer;
+      noise.loop = true;
+
+      const filter = audioContext.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = 300;
+
+      noise.connect(filter);
+      filter.connect(gainNode);
+      noise.start();
+    }
+
+    function createWindSound() {
+      // Create wind-like whooshing
+      const bufferSize = 2 * audioContext.sampleRate;
+      const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+      const output = buffer.getChannelData(0);
+
+      let lastOut = 0;
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        output[i] = (lastOut + (0.03 * white)) / 1.03;
+        lastOut = output[i];
+        output[i] *= 2.5;
+      }
+
+      const noise = audioContext.createBufferSource();
+      noise.buffer = buffer;
+      noise.loop = true;
+
+      // Modulate the filter for wind gusts
+      const filter = audioContext.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.value = 200;
+      filter.Q.value = 2;
+
+      // LFO for filter modulation
+      const lfo = audioContext.createOscillator();
+      const lfoGain = audioContext.createGain();
+      lfo.frequency.value = 0.2;
+      lfoGain.gain.value = 150;
+      lfo.connect(lfoGain);
+      lfoGain.connect(filter.frequency);
+      lfo.start();
+
+      noise.connect(filter);
+      filter.connect(gainNode);
+      noise.start();
+    }
+
+    // ===== BOREDOM PROMPTS =====
+    function showBoredomPrompt() {
+      const prompt = BOREDOM_PROMPTS[Math.floor(Math.random() * BOREDOM_PROMPTS.length)];
+      document.getElementById('boredomPromptText').textContent = prompt.text;
+
+      // Update icon based on prompt type
+      const iconSVGs = {
+        window: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="12" y1="3" x2="12" y2="21"/></svg>',
+        pencil: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+        ear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>',
+        stretch: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="5" r="3"/><path d="M12 8v4m-4 8l4-4 4 4M6 12h4m4 0h4"/></svg>',
+        eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
+        hand: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 11V6a2 2 0 0 0-4 0v5M14 10V4a2 2 0 0 0-4 0v6M10 10V5a2 2 0 0 0-4 0v9c0 4.42 3.58 8 8 8a8 8 0 0 0 8-8v-5a2 2 0 0 0-4 0v4"/></svg>',
+        breath: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>',
+        heart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
+        color: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>',
+        foot: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></svg>',
+        cloud: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>',
+        book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+        smile: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>'
+      };
+
+      document.getElementById('boredomPromptIcon').innerHTML = iconSVGs[prompt.icon] || iconSVGs.heart;
+      openModal('boredomPromptModal');
+    }
+
+    function acceptBoredomPrompt() {
+      closeModal('boredomPromptModal');
+      showToast('Take your time...');
+    }
+
+    function skipBoredomPrompt() {
+      closeModal('boredomPromptModal');
+      showToast('Goal reached! Keep going...');
+    }
+
+    function disableBoredomPrompts() {
+      state.settings.boredomPromptsEnabled = false;
+      document.getElementById('promptsToggle').classList.remove('active');
+      saveState();
+      closeModal('boredomPromptModal');
+      showToast('Prompts disabled');
+    }
+
+    // Initialize app
+    init();
+  </script>
+</body>
+</html>
